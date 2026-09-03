@@ -1,5 +1,5 @@
 # Stage 1: Build static Go binary
-FROM golang:1.25-alpine AS builder
+FROM golang:alpine AS builder
 
 WORKDIR /src
 
