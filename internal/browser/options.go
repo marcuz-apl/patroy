@@ -51,11 +51,16 @@ func WithDevtools(devtools bool) ManagerOption {
 
 // PageOptions defines per-page scraping configuration.
 type PageOptions struct {
-	WaitSelector   string
-	WaitTimeout    time.Duration
-	UserAgent      string
-	ViewportWidth  int
-	ViewportHeight int
+	WaitSelector       string
+	WaitTimeout        time.Duration
+	UserAgent          string
+	ViewportWidth      int
+	ViewportHeight     int
+	CaptureScreenshot  bool
+	FullPageScreenshot bool
+	ScreenshotFormat   string
+	CapturePDF         bool
+	PDFLandscape       bool
 }
 
 // DefaultManagerOptions returns sane defaults for browser management.

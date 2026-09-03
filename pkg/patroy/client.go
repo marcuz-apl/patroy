@@ -9,6 +9,7 @@ import (
 	"github.com/marcuz-apl/patroy/internal/browser"
 	"github.com/marcuz-apl/patroy/internal/extractor"
 	"github.com/marcuz-apl/patroy/internal/fallback"
+	"github.com/marcuz-apl/patroy/internal/proxy"
 )
 
 // Client coordinates browser automation, fallback HTTP retrieval, and content extraction.
@@ -16,6 +17,7 @@ type Client struct {
 	opts           Options
 	browserMgr     *browser.Manager
 	fallbackClient *fallback.Client
+	proxyMgr       *proxy.Manager
 	mu             sync.Mutex
 	closed         bool
 }
@@ -32,10 +34,20 @@ func NewClient(opts ...Option) (*Client, error) {
 		fbOpts = append(fbOpts, fallback.WithUserAgent(cfg.UserAgent))
 	}
 
-	return &Client{
+	c := &Client{
 		opts:           cfg,
 		fallbackClient: fallback.NewClient(fbOpts...),
-	}, nil
+	}
+
+	if len(cfg.ProxyList) > 0 {
+		pMgr, err := proxy.NewManager(cfg.ProxyList, proxy.Strategy(cfg.ProxyStrategy))
+		if err != nil {
+			return nil, fmt.Errorf("patroy: initialize proxy manager: %w", err)
+		}
+		c.proxyMgr = pMgr
+	}
+
+	return c, nil
 }
 
 // getBrowser lazily initializes and returns the browser coordinator.
@@ -51,11 +63,18 @@ func (c *Client) getBrowser(cfg Options) (*browser.Manager, error) {
 		return c.browserMgr, nil
 	}
 
+	proxyURL := cfg.Proxy
+	if proxyURL == "" && c.proxyMgr != nil {
+		if nextProxy, err := c.proxyMgr.Next(); err == nil {
+			proxyURL = nextProxy
+		}
+	}
+
 	mgrOpts := []browser.ManagerOption{
 		browser.WithHeadless(cfg.Headless),
 	}
-	if cfg.Proxy != "" {
-		mgrOpts = append(mgrOpts, browser.WithProxy(cfg.Proxy))
+	if proxyURL != "" {
+		mgrOpts = append(mgrOpts, browser.WithProxy(proxyURL))
 	}
 
 	mgr, err := browser.NewManager(mgrOpts...)
@@ -84,18 +103,25 @@ func (c *Client) Scrape(ctx context.Context, targetURL string, opts ...Option) (
 
 	var rawHTML string
 	var finalURL string
+	var screenshot []byte
+	var pdf []byte
 	var isFallback bool
 
 	pageOpts := browser.PageOptions{
-		WaitSelector: cfg.WaitSelector,
-		WaitTimeout:  cfg.WaitTimeout,
-		UserAgent:    cfg.UserAgent,
+		WaitSelector:       cfg.WaitSelector,
+		WaitTimeout:        cfg.WaitTimeout,
+		UserAgent:          cfg.UserAgent,
+		CaptureScreenshot:  cfg.CaptureScreenshot,
+		FullPageScreenshot: cfg.FullPageScreenshot,
+		ScreenshotFormat:   cfg.ScreenshotFormat,
+		CapturePDF:         cfg.CapturePDF,
+		PDFLandscape:       cfg.PDFLandscape,
 	}
 
 	// 1. Attempt stealth browser navigation
 	bMgr, err := c.getBrowser(cfg)
 	if err == nil {
-		rawHTML, finalURL, err = bMgr.FetchPage(ctx, targetURL, pageOpts)
+		rawHTML, finalURL, screenshot, pdf, err = bMgr.FetchPageWithMedia(ctx, targetURL, pageOpts)
 	}
 
 	// 2. Fall back to direct net/http if browser failed and fallback is enabled
@@ -134,6 +160,8 @@ func (c *Client) Scrape(ctx context.Context, targetURL string, opts ...Option) (
 		RawHTML:     extRes.RawHTML,
 		NextData:    extRes.NextData,
 		JSONLD:      extRes.JSONLD,
+		Screenshot:  screenshot,
+		PDF:         pdf,
 		ExtractedAt: time.Now().UTC(),
 		IsFallback:  isFallback,
 		DurationMs:  time.Since(startTime).Milliseconds(),

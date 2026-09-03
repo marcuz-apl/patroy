@@ -121,28 +121,13 @@ func NewManager(opts ...ManagerOption) (*Manager, error) {
 	}, nil
 }
 
-// LeasePage acquires an isolated incognito page with stealth scripts injected.
-// The caller is responsible for invoking release() when finished.
-func (m *Manager) LeasePage(ctx context.Context, pageOpts PageOptions) (*rod.Page, func(), error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	if m.closed {
-		return nil, nil, fmt.Errorf("browser: manager is closed")
-	}
-
-	incognito, err := m.browser.Incognito()
-	if err != nil {
-		return nil, nil, fmt.Errorf("browser: create incognito context: %w", err)
-	}
-
+// leaseStealthPage configures a new stealth page on the provided incognito browser.
+func (m *Manager) leaseStealthPage(incognito *rod.Browser, pageOpts PageOptions) (*rod.Page, error) {
 	page, err := stealth.Page(incognito)
 	if err != nil {
-		_ = incognito.Close()
-		return nil, nil, fmt.Errorf("browser: inject stealth into page: %w", err)
+		return nil, fmt.Errorf("browser: inject stealth into page: %w", err)
 	}
 
-	// Set viewport dimensions
 	width := pageOpts.ViewportWidth
 	if width <= 0 {
 		width = 1920
@@ -158,6 +143,30 @@ func (m *Manager) LeasePage(ctx context.Context, pageOpts PageOptions) (*rod.Pag
 		DeviceScaleFactor: 1,
 	})
 
+	return page, nil
+}
+
+// LeasePage acquires an isolated incognito page with stealth scripts injected.
+// The caller is responsible for invoking release() when finished.
+func (m *Manager) LeasePage(ctx context.Context, pageOpts PageOptions) (*rod.Page, func(), error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.closed {
+		return nil, nil, fmt.Errorf("browser: manager is closed")
+	}
+
+	incognito, err := m.browser.Incognito()
+	if err != nil {
+		return nil, nil, fmt.Errorf("browser: create incognito context: %w", err)
+	}
+
+	page, err := m.leaseStealthPage(incognito, pageOpts)
+	if err != nil {
+		_ = incognito.Close()
+		return nil, nil, err
+	}
+
 	page = page.Context(ctx)
 
 	release := func() {
@@ -172,20 +181,20 @@ func (m *Manager) LeasePage(ctx context.Context, pageOpts PageOptions) (*rod.Pag
 	return page, release, nil
 }
 
-// FetchPage performs complete stealth navigation, waiting, and raw HTML extraction.
-func (m *Manager) FetchPage(ctx context.Context, targetURL string, pageOpts PageOptions) (string, string, error) {
+// FetchPageWithMedia performs stealth navigation, HTML extraction, and optional screenshot/PDF capture.
+func (m *Manager) FetchPageWithMedia(ctx context.Context, targetURL string, pageOpts PageOptions) (string, string, []byte, []byte, error) {
 	page, release, err := m.LeasePage(ctx, pageOpts)
 	if err != nil {
-		return "", "", err
+		return "", "", nil, nil, err
 	}
 	defer release()
 
 	if err := page.Navigate(targetURL); err != nil {
-		return "", "", fmt.Errorf("browser: navigate to %s: %w", targetURL, err)
+		return "", "", nil, nil, fmt.Errorf("browser: navigate to %s: %w", targetURL, err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		return "", "", fmt.Errorf("browser: wait load for %s: %w", targetURL, err)
+		return "", "", nil, nil, fmt.Errorf("browser: wait load for %s: %w", targetURL, err)
 	}
 
 	if pageOpts.WaitSelector != "" {
@@ -199,7 +208,7 @@ func (m *Manager) FetchPage(ctx context.Context, targetURL string, pageOpts Page
 
 		waitPage := page.Context(waitCtx)
 		if _, err := waitPage.Element(pageOpts.WaitSelector); err != nil {
-			return "", "", fmt.Errorf("browser: wait for selector %q: %w", pageOpts.WaitSelector, err)
+			return "", "", nil, nil, fmt.Errorf("browser: wait for selector %q: %w", pageOpts.WaitSelector, err)
 		}
 	}
 
@@ -211,10 +220,32 @@ func (m *Manager) FetchPage(ctx context.Context, targetURL string, pageOpts Page
 
 	html, err := page.HTML()
 	if err != nil {
-		return "", "", fmt.Errorf("browser: retrieve page HTML: %w", err)
+		return "", "", nil, nil, fmt.Errorf("browser: retrieve page HTML: %w", err)
 	}
 
-	return html, finalURL, nil
+	var screenshot []byte
+	if pageOpts.CaptureScreenshot {
+		screenshot, _ = CaptureScreenshot(ctx, page, ScreenshotOptions{
+			FullPage: pageOpts.FullPageScreenshot,
+			Format:   pageOpts.ScreenshotFormat,
+		})
+	}
+
+	var pdf []byte
+	if pageOpts.CapturePDF {
+		pdf, _ = CapturePDF(ctx, page, PDFOptions{
+			Landscape:       pageOpts.PDFLandscape,
+			PrintBackground: true,
+		})
+	}
+
+	return html, finalURL, screenshot, pdf, nil
+}
+
+// FetchPage performs complete stealth navigation, waiting, and raw HTML extraction.
+func (m *Manager) FetchPage(ctx context.Context, targetURL string, pageOpts PageOptions) (string, string, error) {
+	html, finalURL, _, _, err := m.FetchPageWithMedia(ctx, targetURL, pageOpts)
+	return html, finalURL, err
 }
 
 // Close releases all browser instances and shuts down the coordinator.

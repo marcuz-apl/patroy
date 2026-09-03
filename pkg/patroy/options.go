@@ -4,15 +4,24 @@ import "time"
 
 // Options represents all configuration options for Client and Scrape operations.
 type Options struct {
-	Timeout          time.Duration
-	Headless         bool
-	WaitSelector     string
-	WaitTimeout      time.Duration
-	FallbackHTTP     bool
-	Proxy            string
-	UserAgent        string
-	IncludeRawHTML   bool
-	IncludeCleanHTML bool
+	Timeout            time.Duration
+	Headless           bool
+	WaitSelector       string
+	WaitTimeout        time.Duration
+	FallbackHTTP       bool
+	Proxy              string
+	ProxyList          []string
+	ProxyStrategy      string
+	UserAgent          string
+	IncludeRawHTML     bool
+	IncludeCleanHTML   bool
+	CaptureScreenshot  bool
+	FullPageScreenshot bool
+	ScreenshotFormat   string
+	CapturePDF         bool
+	PDFLandscape       bool
+	Concurrency        int
+	Delay              time.Duration
 }
 
 // DefaultOptions returns standard sensible defaults.
@@ -22,6 +31,7 @@ func DefaultOptions() Options {
 		Headless:     true,
 		WaitTimeout:  10 * time.Second,
 		FallbackHTTP: true,
+		Concurrency:  4,
 	}
 }
 
@@ -63,10 +73,18 @@ func WithFallbackHTTP(enable bool) Option {
 	}
 }
 
-// WithProxy configures an HTTP/SOCKS proxy for network traffic.
+// WithProxy configures a single HTTP/SOCKS proxy for network traffic.
 func WithProxy(proxy string) Option {
 	return func(o *Options) {
 		o.Proxy = proxy
+	}
+}
+
+// WithProxies configures a proxy list and rotation strategy (round-robin, random, failover).
+func WithProxies(proxies []string, strategy string) Option {
+	return func(o *Options) {
+		o.ProxyList = proxies
+		o.ProxyStrategy = strategy
 	}
 }
 
@@ -88,5 +106,44 @@ func WithIncludeRawHTML(include bool) Option {
 func WithIncludeCleanHTML(include bool) Option {
 	return func(o *Options) {
 		o.IncludeCleanHTML = include
+	}
+}
+
+// WithScreenshot enables screenshot capture on scraped pages.
+func WithScreenshot(fullPage bool) Option {
+	return func(o *Options) {
+		o.CaptureScreenshot = true
+		o.FullPageScreenshot = fullPage
+	}
+}
+
+// WithScreenshotFormat sets the format of captured screenshots ("png", "jpeg", "webp").
+func WithScreenshotFormat(format string) Option {
+	return func(o *Options) {
+		o.ScreenshotFormat = format
+	}
+}
+
+// WithPDF enables PDF document export from the scraped page.
+func WithPDF(landscape bool) Option {
+	return func(o *Options) {
+		o.CapturePDF = true
+		o.PDFLandscape = landscape
+	}
+}
+
+// WithConcurrency sets the number of concurrent workers for batch scraping.
+func WithConcurrency(workers int) Option {
+	return func(o *Options) {
+		if workers > 0 {
+			o.Concurrency = workers
+		}
+	}
+}
+
+// WithDelay sets an intentional delay between consecutive scraping operations.
+func WithDelay(d time.Duration) Option {
+	return func(o *Options) {
+		o.Delay = d
 	}
 }

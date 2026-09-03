@@ -19,6 +19,8 @@ type ScrapeResult struct {
 	RawHTML     string                 `json:"raw_html,omitempty"`
 	NextData    map[string]interface{} `json:"next_data,omitempty"`
 	JSONLD      []interface{}          `json:"json_ld,omitempty"`
+	Screenshot  []byte                 `json:"screenshot,omitempty"`
+	PDF         []byte                 `json:"pdf,omitempty"`
 	ExtractedAt time.Time              `json:"extracted_at"`
 	IsFallback  bool                   `json:"is_fallback"`
 	DurationMs  int64                  `json:"duration_ms"`
