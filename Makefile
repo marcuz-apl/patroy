@@ -19,6 +19,14 @@ build:
 	mkdir -p $(BIN_DIR)
 	CGO_ENABLED=0 $(GO) build -trimpath -ldflags="$(LDFLAGS)" -o $(BINARY) ./cmd/patroy
 
+build-windows:
+	mkdir -p $(BIN_DIR)
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GO) build -trimpath -ldflags="$(LDFLAGS)" -o $(BIN_DIR)/patroy.exe ./cmd/patroy
+
+build-all: build build-windows
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 $(GO) build -trimpath -ldflags="$(LDFLAGS)" -o $(BIN_DIR)/patroy_darwin_arm64 ./cmd/patroy
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 $(GO) build -trimpath -ldflags="$(LDFLAGS)" -o $(BIN_DIR)/patroy_darwin_amd64 ./cmd/patroy
+
 test:
 	$(GO) test -v -race ./...
 
