@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "patroy"
+version = "0.4.0"
+description = "Fast, undetected stealth web scraping & LLM Markdown extraction client for Patroy"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Marcuz Zou", email = "marcus.zou@icloud.com" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/marcuz-apl/patroy"
+Repository = "https://github.com/marcuz-apl/patroy.git"
