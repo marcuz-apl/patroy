@@ -3,7 +3,7 @@
     "#1": {
       "0409": {
         "identity": {
-          "name": "Marcuz.Patroy.CLI",
+          "name": "Alfazen.Patroy.CLI",
           "version": "0.4.0.0"
         },
         "description": "Patroy - Lightweight Web Scraper and Markdown Extractor",
@@ -25,11 +25,11 @@
         },
         "info": {
           "0409": {
-            "CompanyName": "Marcuz Zou",
+            "CompanyName": "Alfazen Inc.",
             "FileDescription": "Patroy - Lightweight Web Scraper and Markdown Extractor",
             "FileVersion": "0.4.0.0",
             "InternalName": "patroy.exe",
-            "LegalCopyright": "Copyright (c) 2026 Marcuz Zou. Apache-2.0 License.",
+            "LegalCopyright": "Copyright (c) 2026 Alfazen Inc. All rights reserved.",
             "OriginalFilename": "patroy.exe",
             "ProductName": "Patroy",
             "ProductVersion": "0.4.0"
