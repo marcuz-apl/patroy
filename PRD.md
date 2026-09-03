@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary
 
-**Patroy** is a standalone, ultra-lean, high-performance Go library, CLI tool, and microservice designed to convert any dynamic web page into clean, LLM-ready Markdown and structured data with resilient execution across modern web perimeters.
+**Patroy** is a standalone, ultra-lean, high-performance Go library, CLI tool, and microservice designed to convert any dynamic web page into clean, LLM-ready Markdown and structured data with resilient execution across modern dynamic web environments.
 
 By coupling **Go-Rod + Stealth** (native Go Chrome DevTools Protocol engine with realistic browser emulation) with **Go-Trafilatura** (the Go port of Trafilatura's gold-standard algorithmic boilerplate removal) and **HTML-to-Markdown/v2**, Patroy delivers superior rendering fidelity and content cleanliness in a **single, standalone, dependency-free static binary** (<20MB) with zero Python or Node.js runtime requirements.
 
