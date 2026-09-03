@@ -40,7 +40,7 @@ ENV PATROY_CHROME_BIN=/usr/bin/chromium-browser
 USER patroy
 WORKDIR /home/patroy
 
-EXPOSE 8080
+EXPOSE 4023
 
 ENTRYPOINT ["/usr/local/bin/patroy"]
-CMD ["serve", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["serve", "--host", "0.0.0.0", "--port", "4023"]

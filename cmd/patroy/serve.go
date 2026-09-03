@@ -65,7 +65,7 @@ var serveCmd = &cobra.Command{
 
 func init() {
 	serveCmd.Flags().StringVar(&flagServeHost, "host", "0.0.0.0", "Network host interface to bind")
-	serveCmd.Flags().IntVarP(&flagServePort, "port", "p", 8080, "HTTP port to listen on")
+	serveCmd.Flags().IntVarP(&flagServePort, "port", "p", 4023, "HTTP port to listen on")
 
 	rootCmd.AddCommand(serveCmd)
 }

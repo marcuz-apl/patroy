@@ -8,9 +8,9 @@ services:
     container_name: patroy-service
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "4023:4023"
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8080/health | grep -q 'healthy' || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:4023/health | grep -q 'healthy' || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3
