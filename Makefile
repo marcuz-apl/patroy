@@ -6,7 +6,7 @@ GO := /usr/local/go/bin/go
 
 GIT_SHA ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "dev")
 BUILD_DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
-FULL_VERSION ?= $(shell ./scripts/build-id.sh 2>/dev/null || echo "0.1.0-dev")
+FULL_VERSION ?= $(shell ./.githooks/alfazen-version id 2>/dev/null || echo "0.1.0-dev")
 
 LDFLAGS := -s -w \
 	-X 'main.version=v$(FULL_VERSION)' \

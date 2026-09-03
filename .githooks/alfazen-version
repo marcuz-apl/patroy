@@ -1,7 +1,14 @@
 #!/bin/sh
 set -e
 
+# Alfazen Versioning Engine (v2.0)
+# Usage:
+#   alfazen-version id            - Print the next build identifier (e.g. 0.1.0+2609032)
+#   alfazen-version hook <file>   - Stamp Git trailer on commit message file
+
+ACTION="${1:-id}"
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
+
 BASE_VERSION="$(cat "$REPO_ROOT/VERSION" 2>/dev/null || echo "0.1.0")"
 BASE_VERSION="$(printf "%s" "$BASE_VERSION" | tr -d " \r\n")"
 if [ -z "$BASE_VERSION" ]; then
@@ -26,4 +33,20 @@ case "$LAST_BUILD" in
         ;;
 esac
 
-echo "${BASE_VERSION}+${TODAY}${COUNTER}"
+BUILD_ID="${BASE_VERSION}+${TODAY}${COUNTER}"
+
+case "$ACTION" in
+    id)
+        echo "$BUILD_ID"
+        ;;
+    hook)
+        COMMIT_MSG_FILE="$2"
+        if [ -n "$COMMIT_MSG_FILE" ] && [ -f "$COMMIT_MSG_FILE" ]; then
+            git interpret-trailers --in-place --if-exists replace --trailer "Alfazen-Build: v$BUILD_ID" "$COMMIT_MSG_FILE"
+        fi
+        ;;
+    *)
+        echo "Usage: $0 {id|hook <commit_msg_file>}" >&2
+        exit 1
+        ;;
+esac
