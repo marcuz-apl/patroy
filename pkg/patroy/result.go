@@ -4,7 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/marcuz-apl/patroy/internal/chunker"
 )
+
+// Chunk represents a semantic segment of Markdown for LLMs.
+type Chunk = chunker.Chunk
+
+// ChunkOptions defines options for Markdown splitting.
+type ChunkOptions = chunker.ChunkOptions
 
 // ScrapeResult represents the normalized structured output of a scrape operation.
 type ScrapeResult struct {
@@ -42,4 +50,9 @@ func (r *ScrapeResult) ToFormattedJSON() (string, error) {
 		return "", fmt.Errorf("patroy: format scrape result to JSON: %w", err)
 	}
 	return string(bytes), nil
+}
+
+// Chunk splits the extracted Markdown into semantic chunks preserving structure and headers.
+func (r *ScrapeResult) Chunk(opts ChunkOptions) []Chunk {
+	return chunker.SplitMarkdown(r.Markdown, opts)
 }

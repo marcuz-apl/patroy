@@ -1,0 +1,7 @@
+.git
+bin/
+testdata/
+*.png
+*.pdf
+*.log
+scratch/
