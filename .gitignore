@@ -14,3 +14,5 @@
 *.test
 *.out
 /vendor/
+__pycache__/
+*.pyc
