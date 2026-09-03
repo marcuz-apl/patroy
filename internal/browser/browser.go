@@ -11,7 +11,6 @@ import (
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
 	"github.com/go-rod/rod/lib/proto"
-	"github.com/go-rod/stealth"
 )
 
 // Manager coordinates the headless Chromium lifecycle with stealth injection.
@@ -123,8 +122,17 @@ func NewManager(opts ...ManagerOption) (*Manager, error) {
 
 // leaseStealthPage configures a new stealth page on the provided incognito browser.
 func (m *Manager) leaseStealthPage(incognito *rod.Browser, pageOpts PageOptions) (*rod.Page, error) {
-	page, err := stealth.Page(incognito)
+	page, err := incognito.Page(proto.TargetCreateTarget{})
 	if err != nil {
+		return nil, fmt.Errorf("browser: create page: %w", err)
+	}
+
+	script, err := getStealthScript()
+	if err != nil {
+		return nil, fmt.Errorf("browser: decompress stealth script: %w", err)
+	}
+
+	if _, err := page.EvalOnNewDocument(script); err != nil {
 		return nil, fmt.Errorf("browser: inject stealth into page: %w", err)
 	}
 
