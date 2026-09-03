@@ -22,10 +22,12 @@ It pairs **Go-Rod + Stealth** (native Go Chrome DevTools Protocol engine with re
 
 - **🛡️ Native CDP Emulation**: Direct WebSocket communication with Chromium via `go-rod/stealth` normalizing `navigator.webdriver`, canvas rendering, and automation properties without external Node.js wrappers.
 - **🧹 Algorithmic Content Cleaning**: Trafilatura heuristic filters strip 96%+ of navigation menus, advertisements, and tracking noise while preserving tables, code snippets, and structural hierarchy.
+- **📑 Native Table Extraction**: Directly parses HTML `<table>` elements into structured Go objects and JSON (`caption`, `headers`, `rows`) without relying on external tabular converters.
 - **📊 Multi-Format Auto-Detection**: Automatically exports to **Markdown**, **Tabular CSV**, **Structured JSON**, or **Clean HTML** based on your output file extension (`-o output.md`, `-o output.csv`, `-o output.json`, `-o output.html`).
 - **📸 High-Resolution Media Capture**: Native viewport and full-page screenshots (PNG/JPEG/WebP) and pixel-perfect PDF document generation.
 - **⚡ Ultra-Lean & Instant Boot**: Compiles to a single static binary (~18MB) with sub-50ms cold engine start and low memory footprint (<50MB RAM).
-- **📦 Structured Framework Data**: Automatically extracts embedded Next.js (`__NEXT_DATA__`) and Schema.org JSON-LD graph objects.
+- **📦 Structured Framework & Schema.org**: Extracts Next.js (`__NEXT_DATA__`) props, Schema.org JSON-LD graphs (with CDATA/comment stripping and `@graph` unpacking), and hydrates missing article metadata.
+- **🔄 Universal JSON Output Aliasing**: Top-level `"html"` JSON alias synchronizing with `clean_html` and `raw_html` for seamless tool and platform compatibility.
 - **🧩 Semantic LLM Chunking**: Context-aware chunker that respects Markdown heading hierarchies and protects code blocks from truncation.
 - **🌐 REST Microservice & Docker**: Built-in HTTP server (`patroy serve`) running on port `4023` ready for containerized deployment.
 - **🔄 Fault-Tolerant Fallback**: Instant `net/http` fallback on browser timeouts or crashes.

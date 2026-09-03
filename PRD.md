@@ -153,3 +153,10 @@ Patroy occupies the **"Pure Native High-Fidelity Sweet Spot"**:
 - [x] Webhook & Asynchronous Dispatch (`202 Accepted`) for REST microservice scraping.
 - [x] Domain Rate Limiting & Polite Crawling (`--delay`) with per-domain pacing.
 - [x] Multi-platform pre-compiled binaries (Windows, macOS Intel/Apple Silicon, Linux AMD64/ARM64).
+
+### Phase 6 (v1.1.0 — Native Tabular Extraction, Enhanced JSON-LD & Output Aliasing) [COMPLETED]
+- [x] Native Table Extraction (`result.Tables []Table`) extracting caption, headers, and structured data rows from HTML `<table>` elements.
+- [x] Enhanced Schema.org JSON-LD Extraction with CDATA/HTML comment stripping, `@graph` unwrapping, and metadata fallback hydration.
+- [x] Top-level `"html"` JSON alias field synchronizing with `CleanHTML` and `RawHTML` across Go library, CLI, and REST API.
+- [x] Python SDK v1.1.0 release parity with `html` alias and `tables` structured list support.
+

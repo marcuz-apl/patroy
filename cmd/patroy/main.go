@@ -17,13 +17,13 @@ import (
 )
 
 var (
-	version = "1.0.0"
+	version = "1.1.0"
 	commit  = "none"
 	date    = "unknown"
 )
 
 func init() {
-	if version == "1.0.0" {
+	if version == "1.1.0" {
 		if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
 			version = info.Main.Version
 		}

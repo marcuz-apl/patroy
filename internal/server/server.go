@@ -24,7 +24,7 @@ type Server struct {
 // NewServer initializes a new REST API server.
 func NewServer(client *patroy.Client, version string) *Server {
 	if version == "" {
-		version = "0.3.0"
+		version = "1.1.0"
 	}
 
 	s := &Server{

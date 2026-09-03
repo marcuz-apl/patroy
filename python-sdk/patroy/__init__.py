@@ -2,5 +2,5 @@
 
 from .client import PatroyClient, ScrapeResult, Chunk
 
-__version__ = "0.4.0"
+__version__ = "1.1.0"
 __all__ = ["PatroyClient", "ScrapeResult", "Chunk"]

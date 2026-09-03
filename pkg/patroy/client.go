@@ -155,6 +155,11 @@ func (c *Client) Scrape(ctx context.Context, targetURL string, opts ...Option) (
 		return nil, fmt.Errorf("patroy: extraction failed: %w", err)
 	}
 
+	htmlContent := extRes.CleanHTML
+	if htmlContent == "" {
+		htmlContent = extRes.RawHTML
+	}
+
 	result := &ScrapeResult{
 		URL:         extRes.URL,
 		Title:       extRes.Title,
@@ -163,9 +168,11 @@ func (c *Client) Scrape(ctx context.Context, targetURL string, opts ...Option) (
 		Date:        extRes.Date,
 		SiteName:    extRes.SiteName,
 		Markdown:    extRes.Markdown,
+		HTML:        htmlContent,
 		CleanHTML:   extRes.CleanHTML,
 		RawHTML:     extRes.RawHTML,
 		CSV:         extRes.CSV,
+		Tables:      extRes.Tables,
 		NextData:    extRes.NextData,
 		JSONLD:      extRes.JSONLD,
 		CustomData:  extRes.CustomData,

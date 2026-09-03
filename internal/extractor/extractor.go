@@ -33,6 +33,7 @@ type Result struct {
 	CleanHTML   string
 	RawHTML     string
 	CSV         string
+	Tables      []Table
 	NextData    map[string]interface{}
 	JSONLD      []interface{}
 	CustomData  map[string]interface{}
@@ -67,6 +68,7 @@ func Extract(ctx context.Context, rawHTML string, targetURL string, opts Options
 		}
 
 		result.CSV = ExtractCSV(doc, targetURL, result.Title)
+		result.Tables = ExtractTables(doc)
 
 		if len(opts.Schema) > 0 {
 			result.CustomData, _ = ExtractCustomSchema(doc, opts.Schema)
@@ -143,7 +145,97 @@ func Extract(ctx context.Context, rawHTML string, targetURL string, opts Options
 		result.CleanHTML = cleanHTML
 	}
 
+	// 4. Hydrate missing metadata from JSON-LD
+	hydrateMetadataFromJSONLD(result)
+
 	return result, nil
+}
+
+// hydrateMetadataFromJSONLD extracts missing Title, Author, Date, Description,
+// and SiteName from Schema.org JSON-LD entities.
+func hydrateMetadataFromJSONLD(res *Result) {
+	if res == nil || len(res.JSONLD) == 0 {
+		return
+	}
+
+	for _, item := range res.JSONLD {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		typeStr, _ := m["@type"].(string)
+
+		// SiteName / Publisher from WebSite/Organization
+		if res.SiteName == "" {
+			if typeStr == "WebSite" || typeStr == "Organization" {
+				if name, ok := m["name"].(string); ok && strings.TrimSpace(name) != "" {
+					res.SiteName = strings.TrimSpace(name)
+				}
+			} else if pubStr, ok := m["publisher"].(string); ok && strings.TrimSpace(pubStr) != "" {
+				res.SiteName = strings.TrimSpace(pubStr)
+			} else if pubMap, ok := m["publisher"].(map[string]interface{}); ok {
+				if name, ok := pubMap["name"].(string); ok && strings.TrimSpace(name) != "" {
+					res.SiteName = strings.TrimSpace(name)
+				}
+			} else if isPartOf, ok := m["isPartOf"].(map[string]interface{}); ok {
+				if name, ok := isPartOf["name"].(string); ok && strings.TrimSpace(name) != "" {
+					res.SiteName = strings.TrimSpace(name)
+				}
+			}
+		}
+
+		// Title / Headline: prefer headline, or name on non-website entities
+		if headline, ok := m["headline"].(string); ok && strings.TrimSpace(headline) != "" {
+			res.Title = strings.TrimSpace(headline)
+		} else if res.Title == "" && typeStr != "WebSite" && typeStr != "Organization" {
+			if name, ok := m["name"].(string); ok && strings.TrimSpace(name) != "" {
+				res.Title = strings.TrimSpace(name)
+			}
+		}
+
+		// Author
+		if res.Author == "" {
+			if authStr, ok := m["author"].(string); ok && strings.TrimSpace(authStr) != "" {
+				res.Author = strings.TrimSpace(authStr)
+			} else if authMap, ok := m["author"].(map[string]interface{}); ok {
+				if name, ok := authMap["name"].(string); ok && strings.TrimSpace(name) != "" {
+					res.Author = strings.TrimSpace(name)
+				}
+			} else if authSlice, ok := m["author"].([]interface{}); ok && len(authSlice) > 0 {
+				if firstMap, ok := authSlice[0].(map[string]interface{}); ok {
+					if name, ok := firstMap["name"].(string); ok && strings.TrimSpace(name) != "" {
+						res.Author = strings.TrimSpace(name)
+					}
+				} else if str, ok := authSlice[0].(string); ok && strings.TrimSpace(str) != "" {
+					res.Author = strings.TrimSpace(str)
+				}
+			} else if creator, ok := m["creator"].(string); ok && strings.TrimSpace(creator) != "" {
+				res.Author = strings.TrimSpace(creator)
+			}
+		}
+
+		// Date: exact timestamp from JSON-LD published date takes precedence over zeroed midnight fallback
+		if pubDate, ok := m["datePublished"].(string); ok && strings.TrimSpace(pubDate) != "" {
+			pubDate = strings.TrimSpace(pubDate)
+			if res.Date == "" || (strings.HasSuffix(res.Date, "T00:00:00Z") && !strings.HasSuffix(pubDate, "T00:00:00Z")) {
+				res.Date = pubDate
+			}
+		} else if res.Date == "" {
+			if createDate, ok := m["dateCreated"].(string); ok && strings.TrimSpace(createDate) != "" {
+				res.Date = strings.TrimSpace(createDate)
+			} else if modDate, ok := m["dateModified"].(string); ok && strings.TrimSpace(modDate) != "" {
+				res.Date = strings.TrimSpace(modDate)
+			}
+		}
+
+		// Description
+		if res.Description == "" {
+			if desc, ok := m["description"].(string); ok && strings.TrimSpace(desc) != "" {
+				res.Description = strings.TrimSpace(desc)
+			}
+		}
+	}
 }
 
 // cleanConsecutiveNewlines reduces 3 or more consecutive newlines to 2.

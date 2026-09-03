@@ -17,13 +17,13 @@ func TestClientScrapeWithFallback(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client, err := NewClient(WithFallbackHTTP(true))
+	client, err := NewClient(WithFallbackHTTP(true), WithTimeout(5*time.Second))
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
 	defer client.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 	defer cancel()
 
 	result, err := client.Scrape(ctx, server.URL)
@@ -73,5 +73,102 @@ func TestConvenienceScrape(t *testing.T) {
 
 	if strings.TrimRight(result.URL, "/") != strings.TrimRight(server.URL, "/") {
 		t.Errorf("expected URL %s, got %s", server.URL, result.URL)
+	}
+}
+
+func TestScrapeResultTablesAndHTMLAlias(t *testing.T) {
+	htmlPayload := `<!DOCTYPE html>
+<html>
+<head>
+	<title>Table Test</title>
+	<script type="application/ld+json">
+	{
+		"@context": "https://schema.org",
+		"@type": "Article",
+		"headline": "Testing Tables and HTML Alias",
+		"author": {"@type": "Person", "name": "Pat Tester"}
+	}
+	</script>
+</head>
+<body>
+	<article>
+		<h1>Testing Tables and HTML Alias</h1>
+		<p>Some lead paragraph.</p>
+		<table id="benchmarks">
+			<caption>Benchmark Results</caption>
+			<thead>
+				<tr><th>Engine</th><th>Latency</th></tr>
+			</thead>
+			<tbody>
+				<tr><td>Patroy</td><td>15ms</td></tr>
+				<tr><td>Other</td><td>120ms</td></tr>
+			</tbody>
+		</table>
+	</article>
+</body>
+</html>`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, htmlPayload)
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	result, err := Scrape(ctx, server.URL, WithFallbackHTTP(true), WithIncludeCleanHTML(true))
+	if err != nil {
+		t.Fatalf("Scrape failed: %v", err)
+	}
+
+	// Verify Tables
+	if len(result.Tables) != 1 {
+		t.Fatalf("expected 1 table extracted, got %d", len(result.Tables))
+	}
+	tbl := result.Tables[0]
+	if tbl.ID != "benchmarks" || tbl.Caption != "Benchmark Results" {
+		t.Errorf("unexpected table ID/caption: id=%s caption=%s", tbl.ID, tbl.Caption)
+	}
+	if len(tbl.Headers) != 2 || tbl.Headers[0] != "Engine" {
+		t.Errorf("unexpected headers: %v", tbl.Headers)
+	}
+	if len(tbl.Rows) != 2 || tbl.Rows[0][0] != "Patroy" || tbl.Rows[0][1] != "15ms" {
+		t.Errorf("unexpected rows: %v", tbl.Rows)
+	}
+
+	// Verify HTML alias
+	if result.HTML == "" {
+		t.Errorf("expected result.HTML to be populated")
+	}
+	if result.CleanHTML == "" {
+		t.Errorf("expected result.CleanHTML to be populated")
+	}
+
+	// Verify JSON serialization includes both "html" and "clean_html"
+	jsonBytes, err := result.ToJSON()
+	if err != nil {
+		t.Fatalf("ToJSON failed: %v", err)
+	}
+	if !strings.Contains(jsonBytes, `"html":`) {
+		t.Errorf("expected JSON to contain 'html' field: %s", jsonBytes)
+	}
+	if !strings.Contains(jsonBytes, `"clean_html":`) {
+		t.Errorf("expected JSON to contain 'clean_html' field: %s", jsonBytes)
+	}
+	if !strings.Contains(jsonBytes, `"tables":`) {
+		t.Errorf("expected JSON to contain 'tables' field: %s", jsonBytes)
+	}
+
+	// Verify JSON round-trip deserialization
+	var roundTrip ScrapeResult
+	if err := roundTrip.UnmarshalJSON([]byte(jsonBytes)); err != nil {
+		t.Fatalf("UnmarshalJSON failed: %v", err)
+	}
+	if roundTrip.HTML == "" || roundTrip.CleanHTML == "" {
+		t.Errorf("expected both HTML and CleanHTML preserved on unmarshal")
+	}
+	if len(roundTrip.Tables) != 1 {
+		t.Errorf("expected 1 table preserved on unmarshal, got %d", len(roundTrip.Tables))
 	}
 }

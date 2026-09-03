@@ -110,3 +110,98 @@ func TestExtractEmptyInput(t *testing.T) {
 		t.Errorf("expected error on empty HTML, got nil")
 	}
 }
+
+func TestExtractJSONLDEnhancements(t *testing.T) {
+	// Test CDATA wrapper and @graph unwrapping
+	html := `<!DOCTYPE html>
+<html>
+<head>
+	<script type="application/ld+json">
+	/* <![CDATA[ */
+	{
+		"@context": "https://schema.org",
+		"@graph": [
+			{
+				"@type": "WebSite",
+				"name": "Patroy News"
+			},
+			{
+				"@type": "Article",
+				"headline": "Structured Data in Go",
+				"author": {
+					"@type": "Person",
+					"name": "Alice Smith"
+				},
+				"datePublished": "2026-09-01T10:00:00Z",
+				"description": "Deep dive into web schema data."
+			}
+		]
+	}
+	/* ]]> */
+	</script>
+</head>
+<body>
+	<article>
+		<p>Sample body content.</p>
+	</article>
+</body>
+</html>`
+
+	res, err := Extract(context.Background(), html, "https://example.com/cdata", Options{})
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+
+	if len(res.JSONLD) != 2 {
+		t.Fatalf("expected 2 items unpacked from @graph, got %d", len(res.JSONLD))
+	}
+
+	// Verify metadata hydration from JSON-LD
+	if res.Title != "Structured Data in Go" {
+		t.Errorf("expected title hydrated from JSON-LD headline, got '%s'", res.Title)
+	}
+	if res.Author != "Alice Smith" {
+		t.Errorf("expected author hydrated from JSON-LD author.name, got '%s'", res.Author)
+	}
+	if res.Date != "2026-09-01T10:00:00Z" {
+		t.Errorf("expected date hydrated from JSON-LD datePublished, got '%s'", res.Date)
+	}
+	if res.Description != "Deep dive into web schema data." {
+		t.Errorf("expected description hydrated from JSON-LD description, got '%s'", res.Description)
+	}
+}
+
+func TestExtractWithTables(t *testing.T) {
+	html := `<!DOCTYPE html>
+<html>
+<body>
+	<h1>Product Comparison</h1>
+	<table>
+		<thead>
+			<tr><th>Product</th><th>Price</th></tr>
+		</thead>
+		<tbody>
+			<tr><td>Patroy Standard</td><td>Free</td></tr>
+			<tr><td>Patroy Pro</td><td>$19</td></tr>
+		</tbody>
+	</table>
+</body>
+</html>`
+
+	res, err := Extract(context.Background(), html, "https://example.com/products", Options{})
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+
+	if len(res.Tables) != 1 {
+		t.Fatalf("expected 1 table extracted in Result.Tables, got %d", len(res.Tables))
+	}
+
+	tbl := res.Tables[0]
+	if len(tbl.Headers) != 2 || tbl.Headers[0] != "Product" || tbl.Headers[1] != "Price" {
+		t.Errorf("unexpected table headers: %v", tbl.Headers)
+	}
+	if len(tbl.Rows) != 2 || tbl.Rows[0][0] != "Patroy Standard" || tbl.Rows[1][1] != "$19" {
+		t.Errorf("unexpected table rows: %v", tbl.Rows)
+	}
+}

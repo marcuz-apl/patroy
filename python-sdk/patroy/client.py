@@ -21,12 +21,14 @@ class ScrapeResult:
     url: str
     title: str
     markdown: str
+    html: Optional[str] = None
     clean_html: Optional[str] = None
     raw_html: Optional[str] = None
     author: Optional[str] = None
     description: Optional[str] = None
     date: Optional[str] = None
     site_name: Optional[str] = None
+    tables: Optional[List[Dict[str, Any]]] = None
     next_data: Optional[Dict[str, Any]] = None
     json_ld: Optional[List[Any]] = None
     screenshot: Optional[str] = None
@@ -49,16 +51,21 @@ class ScrapeResult:
                 for c in chunks_data
             ]
 
+        clean_html = data.get("clean_html") or data.get("html")
+        html = data.get("html") or data.get("clean_html")
+
         return cls(
             url=data.get("url", ""),
             title=data.get("title", ""),
             markdown=data.get("markdown", ""),
-            clean_html=data.get("clean_html"),
+            html=html,
+            clean_html=clean_html,
             raw_html=data.get("raw_html"),
             author=data.get("author"),
             description=data.get("description"),
             date=data.get("date"),
             site_name=data.get("site_name"),
+            tables=data.get("tables"),
             next_data=data.get("next_data"),
             json_ld=data.get("json_ld"),
             screenshot=data.get("screenshot"),
@@ -79,7 +86,7 @@ class PatroyClient:
     def health(self) -> Dict[str, Any]:
         """Check the health and telemetry status of the Patroy microservice."""
         url = f"{self.endpoint}/health"
-        req = urllib.request.Request(url, headers={"User-Agent": "patroy-python/0.4.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "patroy-python/1.1.0"})
         with urllib.request.urlopen(req, timeout=5) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
@@ -112,7 +119,7 @@ class PatroyClient:
                 data=json.dumps(payload).encode("utf-8"),
                 headers={
                     "Content-Type": "application/json",
-                    "User-Agent": "patroy-python/0.4.0",
+                    "User-Agent": "patroy-python/1.1.0",
                 },
                 method="POST",
             )
@@ -147,7 +154,7 @@ class PatroyClient:
             data=json.dumps(payload).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
-                "User-Agent": "patroy-python/0.4.0",
+                "User-Agent": "patroy-python/1.1.0",
             },
             method="POST",
         )
