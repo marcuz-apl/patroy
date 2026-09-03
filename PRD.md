@@ -140,12 +140,12 @@ Patroy occupies the **"Pure Native Stealth Sweet Spot"**:
 - [x] REST API microservice (`/scrape`, `/scrape/batch`, `/health`) on port `4023`.
 - [x] Markdown chunking utility for LLM context windows.
 
-### Phase 4 (v0.4.0 — Production Polish & Ecosystem) [IN PROGRESS]
-- [ ] Public GitHub Release with automated multi-arch GoReleaser matrix.
-- [ ] Continuous Integration pipeline (GitHub Actions).
-- [ ] Benchmarking suite vs Python Patchtroy, Crawl4AI, and Firecrawl.
-- [ ] Lightweight zero-dependency Python SDK (`python/patroy`).
-- [ ] Comprehensive documentation site (`docs/`).
+### Phase 4 (v0.4.0 — Production Polish & Ecosystem) [COMPLETED]
+- [x] Public GitHub Release with automated multi-arch GoReleaser matrix.
+- [x] Continuous Integration pipeline (GitHub Actions).
+- [x] Benchmarking suite vs Python Patchtroy, Crawl4AI, and Firecrawl.
+- [x] Lightweight zero-dependency Python SDK (`python-sdk/`).
+- [x] Comprehensive documentation site (`docs/`).
 
 ### Phase 5 (v1.0.0 — General Availability & Enterprise Hardening)
 - [ ] Production hardening & final API stability freeze.
