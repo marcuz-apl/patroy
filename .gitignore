@@ -1,0 +1,16 @@
+# Binaries
+/bin/
+/dist/
+patroy
+
+# OS / Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Go artifacts
+*.test
+*.out
+/vendor/
