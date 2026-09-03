@@ -25,6 +25,7 @@ type ScrapeResult struct {
 	Markdown    string                 `json:"markdown"`
 	CleanHTML   string                 `json:"clean_html,omitempty"`
 	RawHTML     string                 `json:"raw_html,omitempty"`
+	CSV         string                 `json:"csv,omitempty"`
 	NextData    map[string]interface{} `json:"next_data,omitempty"`
 	JSONLD      []interface{}          `json:"json_ld,omitempty"`
 	Screenshot  []byte                 `json:"screenshot,omitempty"`

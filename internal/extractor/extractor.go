@@ -31,6 +31,7 @@ type Result struct {
 	Markdown    string
 	CleanHTML   string
 	RawHTML     string
+	CSV         string
 	NextData    map[string]interface{}
 	JSONLD      []interface{}
 }
@@ -49,7 +50,7 @@ func Extract(ctx context.Context, rawHTML string, targetURL string, opts Options
 		result.RawHTML = rawHTML
 	}
 
-	// 1. Parse DOM with goquery for framework and schema scripts
+	// 1. Parse DOM with goquery for framework, schema scripts, and tabular CSV
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(rawHTML))
 	if err == nil && doc != nil {
 		result.NextData = ExtractNextData(doc)
@@ -62,10 +63,15 @@ func Extract(ctx context.Context, rawHTML string, targetURL string, opts Options
 		if desc, exists := doc.Find(`meta[name="description"]`).Attr("content"); exists {
 			result.Description = strings.TrimSpace(desc)
 		}
+
+		result.CSV = ExtractCSV(doc, targetURL, result.Title)
 	}
 
 	// 2. Trafilatura heuristic content and metadata extraction
-	trafOpts := trafilatura.Options{}
+	trafOpts := trafilatura.Options{
+		IncludeLinks:  true,
+		IncludeImages: true,
+	}
 	if parsedURL, err := url.Parse(targetURL); err == nil {
 		trafOpts.OriginalURL = parsedURL
 	}
@@ -104,11 +110,25 @@ func Extract(ctx context.Context, rawHTML string, targetURL string, opts Options
 		}
 	}
 
-	// 3. If Trafilatura produced no markdown, fall back to direct HTML-to-Markdown conversion
-	if mdContent == "" {
-		md, err := htmltomarkdown.ConvertString(rawHTML)
-		if err == nil {
-			mdContent = strings.TrimSpace(md)
+	// 3. Fallback to clean DOM conversion if Trafilatura produced no output or collapsed into a single flat line
+	isCollapsed := len(mdContent) > 200 && strings.Count(mdContent, "\n") < 2
+	if mdContent == "" || isCollapsed {
+		if doc != nil {
+			clone := doc.Clone()
+			clone.Find("script, style, noscript, svg, canvas, iframe, link, nav.header").Remove()
+			if bodyHTML, err := clone.Find("body").Html(); err == nil && strings.TrimSpace(bodyHTML) != "" {
+				if domMD, err := htmltomarkdown.ConvertString(bodyHTML); err == nil && len(domMD) > 0 {
+					mdContent = cleanConsecutiveNewlines(domMD)
+					if cleanHTML == "" || isCollapsed {
+						cleanHTML = bodyHTML
+					}
+				}
+			}
+		}
+		if mdContent == "" {
+			if md, err := htmltomarkdown.ConvertString(rawHTML); err == nil {
+				mdContent = cleanConsecutiveNewlines(md)
+			}
 		}
 	}
 
@@ -118,4 +138,24 @@ func Extract(ctx context.Context, rawHTML string, targetURL string, opts Options
 	}
 
 	return result, nil
+}
+
+// cleanConsecutiveNewlines reduces 3 or more consecutive newlines to 2.
+func cleanConsecutiveNewlines(text string) string {
+	lines := strings.Split(text, "\n")
+	var clean []string
+	consecutiveEmpty := 0
+	for _, l := range lines {
+		trimmed := strings.TrimSpace(l)
+		if trimmed == "" {
+			consecutiveEmpty++
+			if consecutiveEmpty <= 1 {
+				clean = append(clean, "")
+			}
+		} else {
+			consecutiveEmpty = 0
+			clean = append(clean, l)
+		}
+	}
+	return strings.TrimSpace(strings.Join(clean, "\n"))
 }

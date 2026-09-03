@@ -158,6 +158,7 @@ func (c *Client) Scrape(ctx context.Context, targetURL string, opts ...Option) (
 		Markdown:    extRes.Markdown,
 		CleanHTML:   extRes.CleanHTML,
 		RawHTML:     extRes.RawHTML,
+		CSV:         extRes.CSV,
 		NextData:    extRes.NextData,
 		JSONLD:      extRes.JSONLD,
 		Screenshot:  screenshot,

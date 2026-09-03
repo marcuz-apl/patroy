@@ -1,18 +1,21 @@
 # Binaries
-/bin/
-/dist/
-/patroy
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
 
-# OS / Editor
-.DS_Store
-.idea/
-.vscode/
-*.swp
-*.swo
+# Test artifacts & media
+*.png
+*.pdf
+output.*
+testdata/out/
 
-# Go artifacts
-*.test
-*.out
-/vendor/
+# Python bytecode
 __pycache__/
 *.pyc
+
+# Environment & local config
+.env
+.DS_Store
+scratch/

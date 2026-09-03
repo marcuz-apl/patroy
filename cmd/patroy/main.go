@@ -187,12 +187,33 @@ var rootCmd = &cobra.Command{
 				}
 			}
 
+			// Auto-detect format from file extension if -f was not explicitly specified
+			effectiveFormat := strings.ToLower(flagFormat)
+			if !cmd.Flags().Changed("format") && flagOutput != "" {
+				switch filepath.Ext(strings.ToLower(flagOutput)) {
+				case ".json":
+					effectiveFormat = "json"
+				case ".csv":
+					effectiveFormat = "csv"
+				case ".html", ".htm":
+					effectiveFormat = "html"
+				case ".md", ".markdown":
+					effectiveFormat = "markdown"
+				}
+			}
+
 			var outputContent string
-			switch strings.ToLower(flagFormat) {
+			switch effectiveFormat {
 			case "json":
 				outputContent, err = result.ToFormattedJSON()
 				if err != nil {
 					return fmt.Errorf("format JSON: %w", err)
+				}
+			case "csv":
+				if result.CSV != "" {
+					outputContent = result.CSV
+				} else {
+					outputContent = fmt.Sprintf("URL,Title,Content\n%q,%q,%q\n", result.URL, result.Title, result.Markdown)
 				}
 			case "html":
 				if result.CleanHTML != "" {
@@ -256,6 +277,13 @@ var rootCmd = &cobra.Command{
 				case "json":
 					ext = "json"
 					data, _ = item.Result.ToFormattedJSON()
+				case "csv":
+					ext = "csv"
+					if item.Result.CSV != "" {
+						data = item.Result.CSV
+					} else {
+						data = fmt.Sprintf("URL,Title,Content\n%q,%q,%q\n", item.Result.URL, item.Result.Title, item.Result.Markdown)
+					}
 				case "html":
 					ext = "html"
 					data = item.Result.CleanHTML
@@ -274,7 +302,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.Flags().StringVarP(&flagOutput, "output", "o", "", "Write output to file (or directory if batch scraping)")
-	rootCmd.Flags().StringVarP(&flagFormat, "format", "f", "markdown", "Output format: markdown, json, html")
+	rootCmd.Flags().StringVarP(&flagFormat, "format", "f", "markdown", "Output format: markdown, json, html, csv (auto-detected from -o extension)")
 	rootCmd.Flags().BoolVar(&flagHeadless, "headless", true, "Run browser in headless mode")
 	rootCmd.Flags().StringVar(&flagWaitFor, "wait-for", "", "Wait for CSS selector to appear in DOM before extracting")
 	rootCmd.Flags().DurationVar(&flagTimeout, "timeout", 30*time.Second, "Scraping timeout duration")
