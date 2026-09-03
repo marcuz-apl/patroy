@@ -49,8 +49,8 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:     "patroy <url|urls_file.txt>",
-	Short:   "Patroy - Undetected stealth web scraper & clean Markdown extractor",
-	Long:    `Patroy converts dynamic, JavaScript-heavy, bot-defended web pages into clean, LLM-ready Markdown, screenshots, PDFs, and structured data using Rod+Stealth and Go-Trafilatura.`,
+	Short:   "Patroy - Lightweight, high-performance web scraper & clean Markdown extractor",
+	Long:    `Patroy converts dynamic, JavaScript-heavy, and client-rendered web pages into clean, LLM-ready Markdown, screenshots, PDFs, and structured data using Rod and Go-Trafilatura.`,
 	Version: fmt.Sprintf("%s (commit %s, built %s)", version, commit, date),
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -1,6 +1,6 @@
 # 🛡️ Patroy
 
-**The undetected stealth web scraper & clean Markdown extractor for LLMs and AI pipelines — powered by Go.**
+**The lightweight and powerful stealth web scraper & clean Markdown extractor for LLMs and AI pipelines — powered by Go.**
 
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8.svg)](https://golang.org)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -13,13 +13,13 @@
 
 **Patroy** is an ultra-lean, high-performance web crawling and content extraction engine designed specifically for LLMs, RAG pipelines, and AI agents.
 
-It pairs **Go-Rod + Stealth** (native Go Chrome DevTools Protocol engine with anti-bot evasion) with **Go-Trafilatura** (algorithmic boilerplate removal) and **HTML-to-Markdown/v2** to produce pristine, noise-free Markdown in a **single static executable** with **zero Python or Node.js runtime dependencies**.
+It pairs **Go-Rod + Stealth** (native Go Chrome DevTools Protocol engine with realistic browser emulation) with **Go-Trafilatura** (algorithmic boilerplate removal) and **HTML-to-Markdown/v2** to produce pristine, noise-free Markdown in a **single static executable** with **zero Python or Node.js runtime dependencies**.
 
 ---
 
 ## ✨ Key Features
 
-- **🛡️ Native CDP Stealth**: Direct WebSocket communication with Chromium via `go-rod/stealth` masking `navigator.webdriver`, canvas fingerprints, and automation flags without external Node.js wrappers.
+- **🛡️ Native CDP Emulation**: Direct WebSocket communication with Chromium via `go-rod/stealth` normalizing `navigator.webdriver`, canvas rendering, and automation properties without external Node.js wrappers.
 - **🧹 Algorithmic Content Cleaning**: Trafilatura heuristic filters strip 96%+ of navigation menus, advertisements, and tracking noise while preserving tables, code snippets, and structural hierarchy.
 - **⚡ Ultra-Lean & Instant Boot**: Compiles to a single static binary (~18MB) with sub-50ms cold engine start and low memory footprint (<50MB RAM).
 - **📦 Structured Framework Data**: Automatically extracts embedded Next.js (`__NEXT_DATA__`) and Schema.org JSON-LD graph objects.

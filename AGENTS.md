@@ -7,7 +7,7 @@ Welcome to **Patroy** (Go edition). This document serves as the operational guid
 ## 1. Project Mission & Identity
 
 **Patroy** is the standalone, high-performance Go rewrite of Patchtroy.
-- **Core Purpose**: Convert dynamic, JavaScript-heavy, bot-defended web pages into clean, LLM-ready Markdown and structured data.
+- **Core Purpose**: Convert dynamic, JavaScript-heavy web pages into clean, LLM-ready Markdown and structured data.
 - **Key Architecture**:
   - Browser Automation: `go-rod/rod` with `go-rod/stealth` (Direct WebSocket CDP connection).
   - Main Body Extraction: `markusmobius/go-trafilatura`.

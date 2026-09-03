@@ -73,7 +73,7 @@ patroy https://example.com/app --wait-for "#dashboard-feed" --timeout 45s
 
 ## 5. Proxy Configuration & Rotation
 
-Evade IP bans and scrape behind residential proxies:
+Distribute requests and scrape reliably through proxies:
 
 ```bash
 # Single proxy endpoint

@@ -10,9 +10,9 @@
 
 ## 1. Executive Summary
 
-**Patroy** (formerly Patchtroy) is a standalone, ultra-lean, high-performance Go library, CLI tool, and microservice designed to convert any dynamic web page into clean, LLM-ready Markdown and structured data with resilient execution across modern web perimeters.
+**Patroy** is a standalone, ultra-lean, high-performance Go library, CLI tool, and microservice designed to convert any dynamic web page into clean, LLM-ready Markdown and structured data with resilient execution across modern web perimeters.
 
-By coupling **Go-Rod + Stealth** (native Go Chrome DevTools Protocol engine with anti-detection masking) with **Go-Trafilatura** (the Go port of Trafilatura's gold-standard algorithmic boilerplate removal) and **HTML-to-Markdown/v2**, Patroy delivers superior stealth and content cleanliness in a **single, standalone, dependency-free static binary** (<20MB) with zero Python or Node.js runtime requirements.
+By coupling **Go-Rod + Stealth** (native Go Chrome DevTools Protocol engine with realistic browser emulation) with **Go-Trafilatura** (the Go port of Trafilatura's gold-standard algorithmic boilerplate removal) and **HTML-to-Markdown/v2**, Patroy delivers superior rendering fidelity and content cleanliness in a **single, standalone, dependency-free static binary** (<20MB) with zero Python or Node.js runtime requirements.
 
 ---
 
@@ -20,15 +20,15 @@ By coupling **Go-Rod + Stealth** (native Go Chrome DevTools Protocol engine with
 
 ### 2.1 The Current Problem
 LLMs require high-quality, noise-free Markdown for RAG (Retrieval-Augmented Generation), fine-tuning, and AI agent reasoning. However:
-1. **Low-level drivers (Playwright, Puppeteer, Selenium)** render dynamic JS, but provide no content cleaning or Markdown extraction and trigger bot detections.
-2. **Text extractors (Readability, Trafilatura)** produce clean text, but fail on dynamic JavaScript SPAs and client-side anti-bot challenges.
+1. **Low-level drivers (Playwright, Puppeteer, Selenium)** render dynamic JS, but provide no content cleaning or Markdown extraction and suffer from high overhead and automation artifacts.
+2. **Text extractors (Readability, Trafilatura)** produce clean text, but fail on dynamic JavaScript SPAs and client-side dynamic challenges.
 3. **Heavy Python Scraping Frameworks (Crawl4AI, Firecrawl self-hosted)** drag along multi-gigabyte dependencies (PyTorch, Transformers, Node.js, Redis, Celery), making cold starts slow and container orchestration complex.
 4. **Commercial APIs (Firecrawl Cloud, Jina Reader)** introduce vendor lock-in, latency, rate limits, and ongoing costs.
 
 ### 2.2 The Patroy (Go) Solution
-Patroy occupies the **"Pure Native Stealth Sweet Spot"**:
+Patroy occupies the **"Pure Native High-Fidelity Sweet Spot"**:
 - **Pure Go CDP**: Direct WebSocket communication with Chromium via `go-rod/rod`—no Node.js wrapper daemon, no Python GIL.
-- **Native Anti-Detection**: `go-rod/stealth` masking `navigator.webdriver`, canvas fingerprinting, and CDP runtime telemetry.
+- **Realistic Browser Emulation**: `go-rod/stealth` normalizing `navigator.webdriver`, canvas rendering, and CDP runtime properties.
 - **Trafilatura Algorithmic Extraction**: `markusmobius/go-trafilatura` paired with `JohannesKaufmann/html-to-markdown/v2` for noise-free, LLM-ready Markdown.
 - **Framework & Schema Data**: Native Go parsing of Next.js (`__NEXT_DATA__`) and Schema.org JSON-LD graphs via `goquery` and `encoding/json`.
 - **Ultra-Lean Footprint**: Single static binary (~18MB), sub-50ms cold engine startup, low RAM consumption (<50MB baseline).

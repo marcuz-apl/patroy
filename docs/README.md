@@ -38,7 +38,7 @@ Welcome to the documentation for **Patroy** — the standalone, high-performance
                                 |
                +----------------+----------------+
                |                                 |
-     [Bot Defenses / JS]                 [Static / Fallback]
+     [Dynamic JS / SPAs]                 [Static / Fallback]
                |                                 |
                v                                 v
      +-------------------+              +------------------+

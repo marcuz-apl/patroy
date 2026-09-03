@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "patroy"
 version = "0.4.0"
-description = "Fast, undetected stealth web scraping & LLM Markdown extraction client for Patroy"
+description = "Fast, lightweight web scraping & LLM Markdown extraction client for Patroy"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }

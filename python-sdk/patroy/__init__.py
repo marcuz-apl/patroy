@@ -1,4 +1,4 @@
-"""Patroy Python SDK - Fast, undetected stealth scraping client."""
+"""Patroy Python SDK - Fast, lightweight web scraping client."""
 
 from .client import PatroyClient, ScrapeResult, Chunk
 
