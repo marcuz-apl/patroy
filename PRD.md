@@ -147,7 +147,7 @@ Patroy occupies the **"Pure Native High-Fidelity Sweet Spot"**:
 - [x] Lightweight zero-dependency Python SDK (`python-sdk/`).
 - [x] Comprehensive documentation site (`docs/`).
 
-### Phase 5 (v1.0.0 — General Availability & Enterprise Hardening)
+### Phase 5 (v1.0.0 — General Availability & Enterprise Hardening) [IN PROGRESS]
 - [ ] Production hardening & final API stability freeze.
 - [ ] Multi-region cluster deployment guide.
 - [ ] Zero-defect quality gate and enterprise security audit.
