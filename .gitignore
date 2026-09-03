@@ -7,6 +7,8 @@ bin/
 
 # Test artifacts & media
 *.png
+!assets/icon.png
+!winres/*.png
 *.pdf
 output.*
 testdata/out/
