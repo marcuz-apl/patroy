@@ -2,11 +2,11 @@
 
 BIN_DIR := bin
 BINARY := $(BIN_DIR)/patroy
-GO := /usr/local/go/bin/go
+GO ?= $(shell which go 2>/dev/null || echo /usr/local/go/bin/go)
 
 GIT_SHA ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "dev")
 BUILD_DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
-FULL_VERSION ?= $(shell ./.githooks/alfazen-version id 2>/dev/null || echo "0.1.0-dev")
+FULL_VERSION ?= $(shell (./.githooks/alfazen-version id 2>/dev/null || ([ -f VERSION ] && cat VERSION)) || echo "0.4.0")
 
 LDFLAGS := -s -w \
 	-X 'main.version=v$(FULL_VERSION)' \
