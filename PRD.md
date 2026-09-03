@@ -120,27 +120,34 @@ Patroy occupies the **"Pure Native Stealth Sweet Spot"**:
 
 ## 5. Release Roadmap
 
-### Phase 1 (v0.1.0 — Core Foundation)
-- [ ] Go module structure (`github.com/marcuz-apl/patroy`).
-- [ ] Core `Client` with `go-rod` + `go-rod/stealth` integration.
-- [ ] Content extraction via `go-trafilatura` + `html-to-markdown/v2`.
-- [ ] Fast `net/http` fallback client.
-- [ ] Next.js & Schema.org JSON-LD extractors.
-- [ ] Standalone `patroy` Cobra CLI.
-- [ ] Unit & contract test suite.
+### Phase 1 (v0.1.0 — Core Foundation) [COMPLETED]
+- [x] Go module structure (`github.com/marcuz-apl/patroy`).
+- [x] Core `Client` with `go-rod` + `go-rod/stealth` integration.
+- [x] Content extraction via `go-trafilatura` + `html-to-markdown/v2`.
+- [x] Fast `net/http` fallback client.
+- [x] Next.js & Schema.org JSON-LD extractors.
+- [x] Standalone `patroy` Cobra CLI.
+- [x] Unit & contract test suite.
 
-### Phase 2 (v0.2.0 — Throughput & Media)
-- [ ] Page & Context Pool for concurrent scraping (>5x throughput).
-- [ ] Screenshot & PDF capture.
-- [ ] Proxy rotation manager (residential proxy authentication).
-- [ ] Batch scraping API (`ScrapeMany`).
+### Phase 2 (v0.2.0 — Throughput & Media) [COMPLETED]
+- [x] Page & Context Pool for concurrent scraping (>5x throughput).
+- [x] Screenshot & PDF capture.
+- [x] Proxy rotation manager (residential proxy authentication).
+- [x] Batch scraping API (`ScrapeMany`).
 
-### Phase 3 (v0.3.0 — Service & Packaging)
-- [ ] Single-binary lightweight Docker container (`scratch` or `alpine`).
-- [ ] REST API microservice (`/scrape`, `/scrape/batch`, `/health`).
-- [ ] Markdown chunking utility for LLM context windows.
+### Phase 3 (v0.3.0 — Service & Packaging) [COMPLETED]
+- [x] Single-binary lightweight Docker container (`scratch` or `alpine`).
+- [x] REST API microservice (`/scrape`, `/scrape/batch`, `/health`) on port `4023`.
+- [x] Markdown chunking utility for LLM context windows.
 
-### Phase 4 (v1.0.0 — Production Stabilization)
+### Phase 4 (v0.4.0 — Production Polish & Ecosystem) [IN PROGRESS]
 - [ ] Public GitHub Release with automated multi-arch GoReleaser matrix.
-- [ ] Benchmarks vs Python Patchtroy, Crawl4AI, and Firecrawl.
-- [ ] Complete documentation site.
+- [ ] Continuous Integration pipeline (GitHub Actions).
+- [ ] Benchmarking suite vs Python Patchtroy, Crawl4AI, and Firecrawl.
+- [ ] Lightweight zero-dependency Python SDK (`python/patroy`).
+- [ ] Comprehensive documentation site (`docs/`).
+
+### Phase 5 (v1.0.0 — General Availability & Enterprise Hardening)
+- [ ] Production hardening & final API stability freeze.
+- [ ] Multi-region cluster deployment guide.
+- [ ] Zero-defect quality gate and enterprise security audit.
