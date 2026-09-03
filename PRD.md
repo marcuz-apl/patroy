@@ -147,7 +147,9 @@ Patroy occupies the **"Pure Native High-Fidelity Sweet Spot"**:
 - [x] Lightweight zero-dependency Python SDK (`python-sdk/`).
 - [x] Comprehensive documentation site (`docs/`).
 
-### Phase 5 (v1.0.0 — General Availability & Enterprise Hardening) [IN PROGRESS]
-- [ ] Production hardening & final API stability freeze.
-- [ ] Multi-region cluster deployment guide.
-- [ ] Zero-defect quality gate and enterprise security audit.
+### Phase 5 (v1.0.0 — General Availability & Enterprise Hardening) [COMPLETED]
+- [x] Custom CSS Extraction Schemas (`--schema`) for structured JSON data extraction.
+- [x] SSRF Enterprise Security Hardening (blocking loopback, RFC 1918, link-local, and cloud metadata).
+- [x] Webhook & Asynchronous Dispatch (`202 Accepted`) for REST microservice scraping.
+- [x] Domain Rate Limiting & Polite Crawling (`--delay`) with per-domain pacing.
+- [x] Multi-platform pre-compiled binaries (Windows, macOS Intel/Apple Silicon, Linux AMD64/ARM64).

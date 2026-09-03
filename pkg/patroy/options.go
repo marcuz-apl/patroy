@@ -22,6 +22,8 @@ type Options struct {
 	PDFLandscape       bool
 	Concurrency        int
 	Delay              time.Duration
+	Schema             map[string]interface{}
+	BlockPrivateIPs    bool
 }
 
 // DefaultOptions returns standard sensible defaults.
@@ -145,5 +147,19 @@ func WithConcurrency(workers int) Option {
 func WithDelay(d time.Duration) Option {
 	return func(o *Options) {
 		o.Delay = d
+	}
+}
+
+// WithSchema configures custom CSS extraction schema.
+func WithSchema(schema map[string]interface{}) Option {
+	return func(o *Options) {
+		o.Schema = schema
+	}
+}
+
+// WithBlockPrivateIPs enforces SSRF protection against private and metadata IP addresses.
+func WithBlockPrivateIPs(block bool) Option {
+	return func(o *Options) {
+		o.BlockPrivateIPs = block
 	}
 }

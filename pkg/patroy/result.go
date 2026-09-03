@@ -28,6 +28,7 @@ type ScrapeResult struct {
 	CSV         string                 `json:"csv,omitempty"`
 	NextData    map[string]interface{} `json:"next_data,omitempty"`
 	JSONLD      []interface{}          `json:"json_ld,omitempty"`
+	CustomData  map[string]interface{} `json:"custom_data,omitempty"`
 	Screenshot  []byte                 `json:"screenshot,omitempty"`
 	PDF         []byte                 `json:"pdf,omitempty"`
 	ExtractedAt time.Time              `json:"extracted_at"`

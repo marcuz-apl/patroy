@@ -10,6 +10,7 @@ import (
 	"github.com/marcuz-apl/patroy/internal/extractor"
 	"github.com/marcuz-apl/patroy/internal/fallback"
 	"github.com/marcuz-apl/patroy/internal/proxy"
+	"github.com/marcuz-apl/patroy/internal/security"
 )
 
 // Client coordinates browser automation, fallback HTTP retrieval, and content extraction.
@@ -95,6 +96,11 @@ func (c *Client) Scrape(ctx context.Context, targetURL string, opts ...Option) (
 		opt(&cfg)
 	}
 
+	// SSRF protection validation
+	if err := security.ValidateTargetURL(targetURL, !cfg.BlockPrivateIPs); err != nil {
+		return nil, err
+	}
+
 	if cfg.Timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, cfg.Timeout)
@@ -141,6 +147,7 @@ func (c *Client) Scrape(ctx context.Context, targetURL string, opts ...Option) (
 	extOpts := extractor.Options{
 		IncludeRawHTML:   cfg.IncludeRawHTML,
 		IncludeCleanHTML: cfg.IncludeCleanHTML,
+		Schema:           cfg.Schema,
 	}
 
 	extRes, err := extractor.Extract(ctx, rawHTML, finalURL, extOpts)
@@ -161,6 +168,7 @@ func (c *Client) Scrape(ctx context.Context, targetURL string, opts ...Option) (
 		CSV:         extRes.CSV,
 		NextData:    extRes.NextData,
 		JSONLD:      extRes.JSONLD,
+		CustomData:  extRes.CustomData,
 		Screenshot:  screenshot,
 		PDF:         pdf,
 		ExtractedAt: time.Now().UTC(),

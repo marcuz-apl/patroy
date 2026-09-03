@@ -106,10 +106,26 @@ patroy https://example.com/app --wait-for "#dashboard-feed" --timeout 45s
 patroy https://example.com --proxy "http://user:pass@proxy.example.com:8080"
 ```
 
-### Batch URL Processing
-Scrape multiple URLs concurrently into an output directory:
+### Custom CSS Extraction Schemas (`--schema`)
+Extract targeted structured JSON directly from the page alongside Markdown:
 ```bash
-patroy urls.txt -o ./results/ --concurrency 5 -f md
+# Pass schema as inline JSON or path to schema.json
+patroy https://news.ycombinator.com \
+  --schema '{"top_stories": [".titleline > a"], "points": [".score"]}' \
+  -f json
+```
+
+### Batch URL Processing with Domain Polite Pacing
+Scrape multiple URLs concurrently with automatic per-domain rate limiting:
+```bash
+# Pace requests per domain to avoid HTTP 429 rate limits
+patroy urls.txt -o ./results/ --concurrency 5 --delay 500ms -f md
+```
+
+### Enterprise SSRF Protection
+```bash
+# Block loopback, private intranet IPs, and cloud metadata (169.254.169.254)
+patroy http://169.254.169.254/latest/meta-data/ --block-private-ips
 ```
 
 ---
@@ -119,20 +135,34 @@ patroy urls.txt -o ./results/ --concurrency 5 -f md
 Patroy includes a built-in, production-ready HTTP microservice listening on port `4023`:
 
 ```bash
-# Start the microservice
+# Start the microservice (SSRF protection enabled by default)
 patroy serve --port 4023
 ```
 
 ### API Endpoints
-- **`GET /health`**: Healthcheck and readiness probe.
-- **`POST /scrape`**: Scrape a single URL.
+- **`GET /health`**: Healthcheck, memory statistics, and uptime.
+- **`POST /scrape`**: Scrape a single URL (supports synchronous or asynchronous webhook delivery).
   ```bash
+  # Synchronous scrape with custom CSS schema
   curl -X POST http://localhost:4023/scrape \
     -H "Content-Type: application/json" \
     -d '{
       "url": "https://news.ycombinator.com",
-      "format": "markdown",
-      "screenshot": true
+      "format": "json",
+      "schema": {
+        "top_stories": [".titleline > a"],
+        "scores": [".score"]
+      }
+    }'
+  ```
+
+  ```bash
+  # Asynchronous scrape with Webhook callback (HTTP 202 Accepted)
+  curl -X POST http://localhost:4023/scrape \
+    -H "Content-Type: application/json" \
+    -d '{
+      "url": "https://example.com/long-page",
+      "webhook_url": "https://my-rag-service.com/api/ingest"
     }'
   ```
 - **`POST /scrape/batch`**: Scrape multiple URLs concurrently with streaming results.

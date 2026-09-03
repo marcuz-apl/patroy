@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/marcuz-apl/patroy/internal/security"
 	"github.com/marcuz-apl/patroy/pkg/patroy"
 )
 
@@ -36,15 +38,19 @@ func NewServer(client *patroy.Client, version string) *Server {
 
 // ScrapeRequest represents payload for a single scrape operation.
 type ScrapeRequest struct {
-	URL        string `json:"url"`
-	Format     string `json:"format,omitempty"`
-	WaitFor    string `json:"wait_for,omitempty"`
-	Screenshot bool   `json:"screenshot,omitempty"`
-	PDF        bool   `json:"pdf,omitempty"`
-	TimeoutSec int    `json:"timeout_sec,omitempty"`
-	Chunk      bool   `json:"chunk,omitempty"`
-	ChunkSize  int    `json:"chunk_size,omitempty"`
-	ChunkOver  int    `json:"chunk_overlap,omitempty"`
+	URL          string                 `json:"url"`
+	Format       string                 `json:"format,omitempty"`
+	WaitFor      string                 `json:"wait_for,omitempty"`
+	Screenshot   bool                   `json:"screenshot,omitempty"`
+	PDF          bool                   `json:"pdf,omitempty"`
+	TimeoutSec   int                    `json:"timeout_sec,omitempty"`
+	Chunk        bool                   `json:"chunk,omitempty"`
+	ChunkSize    int                    `json:"chunk_size,omitempty"`
+	ChunkOver    int                    `json:"chunk_overlap,omitempty"`
+	Schema       map[string]interface{} `json:"schema,omitempty"`
+	WebhookURL   string                 `json:"webhook_url,omitempty"`
+	JobID        string                 `json:"job_id,omitempty"`
+	AllowPrivate bool                   `json:"allow_private_ips,omitempty"`
 }
 
 // BatchScrapeRequest represents payload for batch scraping.
@@ -63,8 +69,8 @@ type HealthResponse struct {
 	MemAllocMB float64 `json:"mem_alloc_mb"`
 }
 
-// Routes constructs the HTTP request multiplexer.
-func (s *Server) Routes() http.Handler {
+// Handler registers all API routes and returns the top-level http.Handler.
+func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", s.handleHealth)
@@ -72,6 +78,31 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /scrape/batch", s.handleBatchScrape)
 
 	return mux
+}
+
+// Routes is an alias to Handler for backward compatibility.
+func (s *Server) Routes() http.Handler {
+	return s.Handler()
+}
+
+// Start launches the HTTP server listening on the provided address.
+func (s *Server) Start(addr string) error {
+	s.httpServer = &http.Server{
+		Addr:         addr,
+		Handler:      s.Handler(),
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 60 * time.Second,
+	}
+
+	return s.httpServer.ListenAndServe()
+}
+
+// Shutdown gracefully stops the HTTP server.
+func (s *Server) Shutdown(ctx context.Context) error {
+	if s.httpServer != nil {
+		return s.httpServer.Shutdown(ctx)
+	}
+	return nil
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -107,8 +138,7 @@ func (s *Server) handleScrape(w http.ResponseWriter, r *http.Request) {
 		timeout = time.Duration(req.TimeoutSec) * time.Second
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), timeout)
-	defer cancel()
+	blockPrivate := !req.AllowPrivate
 
 	opts := []patroy.Option{
 		patroy.WithTimeout(timeout),
@@ -116,7 +146,37 @@ func (s *Server) handleScrape(w http.ResponseWriter, r *http.Request) {
 		patroy.WithScreenshot(req.Screenshot),
 		patroy.WithPDF(req.PDF),
 		patroy.WithIncludeCleanHTML(true),
+		patroy.WithSchema(req.Schema),
+		patroy.WithBlockPrivateIPs(blockPrivate),
 	}
+
+	// Asynchronous Webhook Dispatch
+	if req.WebhookURL != "" {
+		if err := security.ValidateTargetURL(req.WebhookURL, req.AllowPrivate); err != nil {
+			http.Error(w, fmt.Sprintf("invalid webhook_url: %v", err), http.StatusBadRequest)
+			return
+		}
+
+		jobID := req.JobID
+		if jobID == "" {
+			jobID = fmt.Sprintf("job_%d", time.Now().UnixNano())
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":      "accepted",
+			"job_id":      jobID,
+			"url":         req.URL,
+			"webhook_url": req.WebhookURL,
+		})
+
+		go s.dispatchWebhook(req, jobID, timeout, opts)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), timeout)
+	defer cancel()
 
 	result, err := s.client.Scrape(ctx, req.URL, opts...)
 	if err != nil {
@@ -141,6 +201,47 @@ func (s *Server) handleScrape(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = json.NewEncoder(w).Encode(result)
+}
+
+func (s *Server) dispatchWebhook(req ScrapeRequest, jobID string, timeout time.Duration, opts []patroy.Option) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout+15*time.Second)
+	defer cancel()
+
+	result, err := s.client.Scrape(ctx, req.URL, opts...)
+
+	payload := map[string]interface{}{
+		"job_id": jobID,
+		"url":    req.URL,
+	}
+
+	if err != nil {
+		payload["status"] = "failed"
+		payload["error"] = err.Error()
+	} else {
+		payload["status"] = "success"
+		payload["result"] = result
+		if req.Chunk {
+			chunkOpts := patroy.ChunkOptions{
+				MaxChunkSize: req.ChunkSize,
+				Overlap:      req.ChunkOver,
+			}
+			payload["chunks"] = result.Chunk(chunkOpts)
+		}
+	}
+
+	bodyBytes, _ := json.Marshal(payload)
+	webhookReq, err := http.NewRequestWithContext(ctx, http.MethodPost, req.WebhookURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return
+	}
+	webhookReq.Header.Set("Content-Type", "application/json")
+	webhookReq.Header.Set("User-Agent", "Patroy-Webhook-Dispatcher/1.0")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(webhookReq)
+	if err == nil && resp != nil {
+		_ = resp.Body.Close()
+	}
 }
 
 func (s *Server) handleBatchScrape(w http.ResponseWriter, r *http.Request) {
@@ -181,24 +282,4 @@ func (s *Server) handleBatchScrape(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(results)
-}
-
-// Start launches the HTTP server and blocks until shutdown or error.
-func (s *Server) Start(addr string) error {
-	s.httpServer = &http.Server{
-		Addr:         addr,
-		Handler:      s.Routes(),
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 60 * time.Second,
-	}
-
-	return s.httpServer.ListenAndServe()
-}
-
-// Shutdown gracefully terminates the server.
-func (s *Server) Shutdown(ctx context.Context) error {
-	if s.httpServer != nil {
-		return s.httpServer.Shutdown(ctx)
-	}
-	return nil
 }

@@ -18,6 +18,7 @@ import (
 type Options struct {
 	IncludeRawHTML   bool
 	IncludeCleanHTML bool
+	Schema           map[string]interface{}
 }
 
 // Result contains extracted content and structured metadata.
@@ -34,6 +35,7 @@ type Result struct {
 	CSV         string
 	NextData    map[string]interface{}
 	JSONLD      []interface{}
+	CustomData  map[string]interface{}
 }
 
 // Extract extracts article body, metadata, Markdown, Next.js props, and JSON-LD from raw HTML.
@@ -65,6 +67,10 @@ func Extract(ctx context.Context, rawHTML string, targetURL string, opts Options
 		}
 
 		result.CSV = ExtractCSV(doc, targetURL, result.Title)
+
+		if len(opts.Schema) > 0 {
+			result.CustomData, _ = ExtractCustomSchema(doc, opts.Schema)
+		}
 	}
 
 	// 2. Trafilatura heuristic content and metadata extraction

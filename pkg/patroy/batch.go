@@ -3,7 +3,8 @@ package patroy
 import (
 	"context"
 	"sync"
-	"time"
+
+	"github.com/marcuz-apl/patroy/internal/ratelimit"
 )
 
 // BatchResult represents the outcome of scraping a single URL within a batch operation.
@@ -30,6 +31,8 @@ func (c *Client) ScrapeMany(ctx context.Context, urls []string, opts ...Option) 
 		concurrency = len(urls)
 	}
 
+	limiter := ratelimit.NewDomainLimiter()
+
 	go func() {
 		defer close(out)
 
@@ -49,7 +52,10 @@ func (c *Client) ScrapeMany(ctx context.Context, urls []string, opts ...Option) 
 					}
 
 					if cfg.Delay > 0 {
-						time.Sleep(cfg.Delay)
+						if err := limiter.Wait(ctx, u, cfg.Delay); err != nil {
+							out <- BatchResult{URL: u, Err: err}
+							continue
+						}
 					}
 
 					res, err := c.Scrape(ctx, u, opts...)

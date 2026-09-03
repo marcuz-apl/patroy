@@ -14,8 +14,9 @@ import (
 )
 
 var (
-	flagServeHost string
-	flagServePort int
+	flagServeHost       string
+	flagServePort       int
+	flagAllowPrivateIPs bool
 )
 
 var serveCmd = &cobra.Command{
@@ -32,6 +33,7 @@ var serveCmd = &cobra.Command{
 			patroy.WithConcurrency(flagConcurrency),
 			patroy.WithIncludeCleanHTML(true),
 			patroy.WithIncludeRawHTML(true),
+			patroy.WithBlockPrivateIPs(!flagAllowPrivateIPs),
 		}
 
 		client, err := patroy.NewClient(clientOpts...)
@@ -66,6 +68,7 @@ var serveCmd = &cobra.Command{
 func init() {
 	serveCmd.Flags().StringVar(&flagServeHost, "host", "0.0.0.0", "Network host interface to bind")
 	serveCmd.Flags().IntVarP(&flagServePort, "port", "p", 4023, "HTTP port to listen on")
+	serveCmd.Flags().BoolVar(&flagAllowPrivateIPs, "allow-private-ips", false, "Allow scrape requests to target private, loopback, or metadata IP addresses (default: blocked)")
 
 	rootCmd.AddCommand(serveCmd)
 }

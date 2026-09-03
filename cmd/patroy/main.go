@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -16,13 +17,13 @@ import (
 )
 
 var (
-	version = "0.4.0"
+	version = "1.0.0"
 	commit  = "none"
 	date    = "unknown"
 )
 
 func init() {
-	if version == "0.4.0" {
+	if version == "1.0.0" {
 		if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
 			version = info.Main.Version
 		}
@@ -30,21 +31,23 @@ func init() {
 }
 
 var (
-	flagOutput         string
-	flagFormat         string
-	flagHeadless       bool
-	flagWaitFor        string
-	flagTimeout        time.Duration
-	flagFallbackHTTP   bool
-	flagSilent         bool
-	flagScreenshot     string
-	flagFullScreenshot string
-	flagPDF            string
-	flagProxy          string
-	flagProxyList      string
-	flagProxyStrategy  string
-	flagConcurrency    int
-	flagDelay          time.Duration
+	flagOutput          string
+	flagFormat          string
+	flagHeadless        bool
+	flagWaitFor         string
+	flagTimeout         time.Duration
+	flagFallbackHTTP    bool
+	flagSilent          bool
+	flagScreenshot      string
+	flagFullScreenshot  string
+	flagPDF             string
+	flagProxy           string
+	flagProxyList       string
+	flagProxyStrategy   string
+	flagConcurrency     int
+	flagDelay           time.Duration
+	flagSchema          string
+	flagBlockPrivateIPs bool
 )
 
 var rootCmd = &cobra.Command{
@@ -133,6 +136,29 @@ var rootCmd = &cobra.Command{
 
 		if flagPDF != "" {
 			opts = append(opts, patroy.WithPDF(false))
+		}
+
+		if flagDelay > 0 {
+			opts = append(opts, patroy.WithDelay(flagDelay))
+		}
+
+		if flagBlockPrivateIPs {
+			opts = append(opts, patroy.WithBlockPrivateIPs(true))
+		}
+
+		if flagSchema != "" {
+			rawSchema := flagSchema
+			if _, err := os.Stat(flagSchema); err == nil {
+				data, err := os.ReadFile(flagSchema)
+				if err == nil {
+					rawSchema = string(data)
+				}
+			}
+			var parsedSchema map[string]interface{}
+			if err := json.Unmarshal([]byte(rawSchema), &parsedSchema); err != nil {
+				return fmt.Errorf("invalid schema JSON: %w", err)
+			}
+			opts = append(opts, patroy.WithSchema(parsedSchema))
 		}
 
 		client, err := patroy.NewClient(opts...)
@@ -321,7 +347,11 @@ func init() {
 
 	// Batch concurrency flags
 	rootCmd.Flags().IntVarP(&flagConcurrency, "concurrency", "c", 4, "Number of concurrent workers for batch scraping")
-	rootCmd.Flags().DurationVar(&flagDelay, "delay", 0, "Delay between requests")
+	rootCmd.Flags().DurationVar(&flagDelay, "delay", 0, "Polite delay between consecutive requests per domain (e.g. 500ms, 1s)")
+
+	// Enterprise schema and security flags
+	rootCmd.Flags().StringVar(&flagSchema, "schema", "", "Custom CSS extraction schema (JSON string or path to .json file)")
+	rootCmd.Flags().BoolVar(&flagBlockPrivateIPs, "block-private-ips", false, "Block internal loopback, private networks, and cloud metadata (SSRF protection)")
 }
 
 func main() {
