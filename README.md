@@ -17,7 +17,7 @@ It pairs **Go-Rod + Stealth** (native Go Chrome DevTools Protocol engine with an
 
 ---
 
-## �� Key Features
+## ✨ Key Features
 
 - **🛡️ Native CDP Stealth**: Direct WebSocket communication with Chromium via `go-rod/stealth` masking `navigator.webdriver`, canvas fingerprints, and automation flags without external Node.js wrappers.
 - **🧹 Algorithmic Content Cleaning**: Trafilatura heuristic filters strip 96%+ of navigation menus, advertisements, and tracking noise while preserving tables, code snippets, and structural hierarchy.
