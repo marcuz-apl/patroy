@@ -17,13 +17,13 @@ import (
 )
 
 var (
-	version = "1.1.0"
+	version = "1.2.0"
 	commit  = "none"
 	date    = "unknown"
 )
 
 func init() {
-	if version == "1.1.0" {
+	if version == "1.2.0" {
 		if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
 			version = info.Main.Version
 		}
@@ -38,6 +38,7 @@ var (
 	flagTimeout         time.Duration
 	flagFallbackHTTP    bool
 	flagSilent          bool
+	flagUserAgent       string
 	flagScreenshot      string
 	flagFullScreenshot  string
 	flagPDF             string
@@ -126,6 +127,10 @@ var rootCmd = &cobra.Command{
 
 		if flagWaitFor != "" {
 			opts = append(opts, patroy.WithWaitSelector(flagWaitFor))
+		}
+
+		if flagUserAgent != "" {
+			opts = append(opts, patroy.WithUserAgent(flagUserAgent))
 		}
 
 		if flagFullScreenshot != "" {
@@ -352,6 +357,9 @@ func init() {
 	// Enterprise schema and security flags
 	rootCmd.Flags().StringVar(&flagSchema, "schema", "", "Custom CSS extraction schema (JSON string or path to .json file)")
 	rootCmd.Flags().BoolVar(&flagBlockPrivateIPs, "block-private-ips", false, "Block internal loopback, private networks, and cloud metadata (SSRF protection)")
+
+	// Fingerprint flags
+	rootCmd.Flags().StringVar(&flagUserAgent, "user-agent", "", `Custom User-Agent (empty = browser stealth default)`)
 }
 
 func main() {

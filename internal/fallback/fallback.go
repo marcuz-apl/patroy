@@ -59,12 +59,24 @@ func NewClient(opts ...Option) *Client {
 
 // Fetch requests the target URL and returns the raw HTML body and the final resolved URL.
 func (c *Client) Fetch(ctx context.Context, targetURL string) (string, string, error) {
+	return c.FetchWithUA(ctx, targetURL, "")
+}
+
+// FetchWithUA requests the target URL with a per-call User-Agent override and
+// returns the raw HTML body and the final resolved URL. An empty userAgent
+// keeps the client's configured default.
+func (c *Client) FetchWithUA(ctx context.Context, targetURL, userAgent string) (string, string, error) {
+	ua := userAgent
+	if ua == "" {
+		ua = c.userAgent
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
 	if err != nil {
 		return "", "", fmt.Errorf("fallback: create request for %s: %w", targetURL, err)
 	}
 
-	req.Header.Set("User-Agent", c.userAgent)
+	req.Header.Set("User-Agent", ua)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("Sec-Ch-Ua", `"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"`)

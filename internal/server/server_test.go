@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -143,5 +144,43 @@ func TestServerWebhookAsync(t *testing.T) {
 		// Success
 	case <-time.After(10 * time.Second):
 		t.Fatalf("timed out waiting for asynchronous webhook delivery")
+	}
+}
+
+func TestServerScrapeUserAgent(t *testing.T) {
+	const ua = "KrawlyxTestUA/1.23"
+	mockTarget := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, `<!DOCTYPE html><html><head><title>UA Echo</title></head><body><h1>Agent %s</h1><p>echo page</p></body></html>`, r.Header.Get("User-Agent"))
+	}))
+	defer mockTarget.Close()
+
+	client, err := patroy.NewClient(patroy.WithFallbackHTTP(true))
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+	defer client.Close()
+
+	srv := NewServer(client, "0.3.0")
+	ts := httptest.NewServer(srv.Routes())
+	defer ts.Close()
+
+	body, _ := json.Marshal(ScrapeRequest{URL: mockTarget.URL, UserAgent: ua, AllowPrivate: true})
+	resp, err := http.Post(ts.URL+"/scrape", "application/json", bytes.NewReader(body))
+	if err != nil {
+		t.Fatalf("scrape request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var res patroy.ScrapeResult
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		t.Fatalf("decode scrape response: %v", err)
+	}
+
+	if !strings.Contains(res.Markdown, ua) {
+		t.Errorf("expected markdown to carry the requested user agent %q, got: %s", ua, res.Markdown)
 	}
 }

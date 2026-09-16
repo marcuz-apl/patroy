@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -92,9 +93,13 @@ func TestCaptureMediaScreenshotAndPDF(t *testing.T) {
 	opts.FullPageScreenshot = true
 	opts.CapturePDF = true
 
-	html, _, screenshot, pdf, err := mgr.FetchPageWithMedia(ctx, server.URL, opts)
+	html, _, status, screenshot, pdf, err := mgr.FetchPageWithMedia(ctx, server.URL, opts)
 	if err != nil {
 		t.Fatalf("FetchPageWithMedia failed: %v", err)
+	}
+
+	if status != http.StatusOK {
+		t.Errorf("expected observed status 200, got %d", status)
 	}
 
 	if html == "" {
@@ -149,4 +154,34 @@ func TestPagePoolConcurrentAcquire(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestFetchPageAppliesCustomUserAgent(t *testing.T) {
+	mgr, err := NewManager(WithHeadless(true))
+	if err != nil {
+		t.Fatalf("failed to create browser manager: %v", err)
+	}
+	defer mgr.Close()
+
+	const ua = "KrawlyxStealthProbe/1.0 (UA-override test)"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, `<!DOCTYPE html><html><body><h1 id="ua">%s</h1></body></html>`, r.Header.Get("User-Agent"))
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	opts := DefaultPageOptions()
+	opts.UserAgent = ua
+	opts.WaitSelector = "#ua"
+
+	html, _, err := mgr.FetchPage(ctx, server.URL, opts)
+	if err != nil {
+		t.Fatalf("FetchPage failed: %v", err)
+	}
+
+	if !strings.Contains(html, ua) {
+		t.Errorf("expected page to echo the overridden user agent %q, got html: %s", ua, html)
+	}
 }

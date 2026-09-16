@@ -50,6 +50,7 @@ type ScrapeRequest struct {
 	Schema       map[string]interface{} `json:"schema,omitempty"`
 	WebhookURL   string                 `json:"webhook_url,omitempty"`
 	JobID        string                 `json:"job_id,omitempty"`
+	UserAgent    string                 `json:"user_agent,omitempty"`
 	AllowPrivate bool                   `json:"allow_private_ips,omitempty"`
 }
 
@@ -148,6 +149,9 @@ func (s *Server) handleScrape(w http.ResponseWriter, r *http.Request) {
 		patroy.WithIncludeCleanHTML(true),
 		patroy.WithSchema(req.Schema),
 		patroy.WithBlockPrivateIPs(blockPrivate),
+	}
+	if req.UserAgent != "" {
+		opts = append(opts, patroy.WithUserAgent(req.UserAgent))
 	}
 
 	// Asynchronous Webhook Dispatch

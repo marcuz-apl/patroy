@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-rod/rod"
@@ -136,6 +137,15 @@ func (m *Manager) leaseStealthPage(incognito *rod.Browser, pageOpts PageOptions)
 		return nil, fmt.Errorf("browser: inject stealth into page: %w", err)
 	}
 
+	// Apply a caller-provided User-Agent (headers + navigator.userAgent together).
+	// Empty means keep the browser's own coherent default — overriding it with
+	// nothing would only add a mismatch signal.
+	if pageOpts.UserAgent != "" {
+		if err := page.SetUserAgent(&proto.NetworkSetUserAgentOverride{UserAgent: pageOpts.UserAgent}); err != nil {
+			return nil, fmt.Errorf("browser: set user agent: %w", err)
+		}
+	}
+
 	width := pageOpts.ViewportWidth
 	if width <= 0 {
 		width = 1920
@@ -190,20 +200,47 @@ func (m *Manager) LeasePage(ctx context.Context, pageOpts PageOptions) (*rod.Pag
 }
 
 // FetchPageWithMedia performs stealth navigation, HTML extraction, and optional screenshot/PDF capture.
-func (m *Manager) FetchPageWithMedia(ctx context.Context, targetURL string, pageOpts PageOptions) (string, string, []byte, []byte, error) {
+// It also returns the observed main-frame HTTP status (0 when it could not be
+// observed) so callers can classify bot-protection challenges.
+func (m *Manager) FetchPageWithMedia(ctx context.Context, targetURL string, pageOpts PageOptions) (string, string, int, []byte, []byte, error) {
 	page, release, err := m.LeasePage(ctx, pageOpts)
 	if err != nil {
-		return "", "", nil, nil, err
+		return "", "", 0, nil, nil, err
 	}
 	defer release()
 
+	// Observe the main-frame response status. The drain goroutine must start
+	// before Navigate; the underlying subscription is bound to the page
+	// context, so release() (page close) always tears it down — error paths
+	// cannot leak it.
+	var observedStatus atomic.Int32
+	waitResponse := page.EachEvent(func(e *proto.NetworkResponseReceived) bool {
+		if e.Response != nil {
+			observedStatus.Store(int32(e.Response.Status))
+		}
+		return true
+	})
+	responseSeen := make(chan struct{})
+	go func() {
+		waitResponse()
+		close(responseSeen)
+	}()
+
 	if err := page.Navigate(targetURL); err != nil {
-		return "", "", nil, nil, fmt.Errorf("browser: navigate to %s: %w", targetURL, err)
+		return "", "", 0, nil, nil, fmt.Errorf("browser: navigate to %s: %w", targetURL, err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		return "", "", nil, nil, fmt.Errorf("browser: wait load for %s: %w", targetURL, err)
+		return "", "", 0, nil, nil, fmt.Errorf("browser: wait load for %s: %w", targetURL, err)
 	}
+
+	// The main-frame response precedes the load event, but allow a short grace
+	// period for edges where WaitLoad returns without a Network event.
+	select {
+	case <-responseSeen:
+	case <-time.After(2 * time.Second):
+	}
+	status := int(observedStatus.Load())
 
 	if pageOpts.WaitSelector != "" {
 		waitTimeout := pageOpts.WaitTimeout
@@ -216,7 +253,7 @@ func (m *Manager) FetchPageWithMedia(ctx context.Context, targetURL string, page
 
 		waitPage := page.Context(waitCtx)
 		if _, err := waitPage.Element(pageOpts.WaitSelector); err != nil {
-			return "", "", nil, nil, fmt.Errorf("browser: wait for selector %q: %w", pageOpts.WaitSelector, err)
+			return "", "", 0, nil, nil, fmt.Errorf("browser: wait for selector %q: %w", pageOpts.WaitSelector, err)
 		}
 	}
 
@@ -228,7 +265,7 @@ func (m *Manager) FetchPageWithMedia(ctx context.Context, targetURL string, page
 
 	html, err := page.HTML()
 	if err != nil {
-		return "", "", nil, nil, fmt.Errorf("browser: retrieve page HTML: %w", err)
+		return "", "", 0, nil, nil, fmt.Errorf("browser: retrieve page HTML: %w", err)
 	}
 
 	var screenshot []byte
@@ -247,12 +284,12 @@ func (m *Manager) FetchPageWithMedia(ctx context.Context, targetURL string, page
 		})
 	}
 
-	return html, finalURL, screenshot, pdf, nil
+	return html, finalURL, status, screenshot, pdf, nil
 }
 
 // FetchPage performs complete stealth navigation, waiting, and raw HTML extraction.
 func (m *Manager) FetchPage(ctx context.Context, targetURL string, pageOpts PageOptions) (string, string, error) {
-	html, finalURL, _, _, err := m.FetchPageWithMedia(ctx, targetURL, pageOpts)
+	html, finalURL, _, _, _, err := m.FetchPageWithMedia(ctx, targetURL, pageOpts)
 	return html, finalURL, err
 }
 

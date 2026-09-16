@@ -109,6 +109,7 @@ func (c *Client) Scrape(ctx context.Context, targetURL string, opts ...Option) (
 
 	var rawHTML string
 	var finalURL string
+	var statusCode int
 	var screenshot []byte
 	var pdf []byte
 	var isFallback bool
@@ -127,7 +128,7 @@ func (c *Client) Scrape(ctx context.Context, targetURL string, opts ...Option) (
 	// 1. Attempt stealth browser navigation
 	bMgr, err := c.getBrowser(cfg)
 	if err == nil {
-		rawHTML, finalURL, screenshot, pdf, err = bMgr.FetchPageWithMedia(ctx, targetURL, pageOpts)
+		rawHTML, finalURL, statusCode, screenshot, pdf, err = bMgr.FetchPageWithMedia(ctx, targetURL, pageOpts)
 	}
 
 	// 2. Fall back to direct net/http if browser failed and fallback is enabled
@@ -136,7 +137,7 @@ func (c *Client) Scrape(ctx context.Context, targetURL string, opts ...Option) (
 			return nil, fmt.Errorf("patroy: browser extraction failed: %w", err)
 		}
 
-		rawHTML, finalURL, err = c.fallbackClient.Fetch(ctx, targetURL)
+		rawHTML, finalURL, err = c.fallbackClient.FetchWithUA(ctx, targetURL, cfg.UserAgent)
 		if err != nil {
 			return nil, fmt.Errorf("patroy: fallback HTTP failed after browser error: %w", err)
 		}
@@ -176,6 +177,8 @@ func (c *Client) Scrape(ctx context.Context, targetURL string, opts ...Option) (
 		NextData:    extRes.NextData,
 		JSONLD:      extRes.JSONLD,
 		CustomData:  extRes.CustomData,
+		StatusCode:  statusCode,
+		Success:     statusCode == 0 || (statusCode >= 200 && statusCode < 400),
 		Screenshot:  screenshot,
 		PDF:         pdf,
 		ExtractedAt: time.Now().UTC(),

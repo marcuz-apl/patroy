@@ -51,6 +51,12 @@ func (p *PagePool) Acquire(ctx context.Context, pageOpts PageOptions) (*rod.Page
 	// 1. Try to take an existing idle page from the pool
 	select {
 	case item := <-p.available:
+		if item == nil {
+			// Channel was closed by Close() between the flag check and the
+			// receive — a closed channel yields nil values.
+			p.mu.Unlock()
+			return nil, nil, fmt.Errorf("browser pool: closed")
+		}
 		p.mu.Unlock()
 		page := item.page.Context(ctx)
 
@@ -97,6 +103,9 @@ func (p *PagePool) Acquire(ctx context.Context, pageOpts PageOptions) (*rod.Page
 	case <-ctx.Done():
 		return nil, nil, fmt.Errorf("browser pool: acquire timeout: %w", ctx.Err())
 	case item := <-p.available:
+		if item == nil {
+			return nil, nil, fmt.Errorf("browser pool: closed")
+		}
 		page := item.page.Context(ctx)
 		release := p.makeRelease(item)
 		return page, release, nil
